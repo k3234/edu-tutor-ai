@@ -27,7 +27,7 @@
       --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
       --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
       --radius-sm: 6px;
-      --radius-md: 12px;
+      --radius-md: 8px;
       --radius-lg: 16px;
       --radius-xl: 20px;
       --space-xs: 4px;
@@ -35,7 +35,7 @@
       --space-md: 16px;
       --space-lg: 24px;
       --space-xl: 32px;
-      --font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      --font-family: "Microsoft YaHei", "PingFang SC", "Helvetica Neue", sans-serif;
       --font-size-xs: 12px;
       --font-size-sm: 13px;
       --font-size-md: 15px;
@@ -238,21 +238,13 @@
       color: var(--color-text-muted);
     }
 
-    .image-panel {
-      background: var(--color-bg-panel);
-      border-radius: var(--radius-xl);
-      overflow: hidden;
-      box-shadow: var(--shadow-md);
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
+
 
     .image-display-area {
       position: relative;
       flex: 1;
-      min-height: 520px;
-      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      min-height: 0;
+      background: none;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -260,10 +252,13 @@
     }
 
     .image-display-area img {
-      max-width: 100%;
-      max-height: 100%;
-      object-fit: contain;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: center;
       user-select: none;
+      position: relative;
+      z-index: 1;
     }
 
     .cursor-marker {
@@ -272,8 +267,8 @@
       height: 44px;
       pointer-events: none;
       z-index: 50;
-      transition: left 0.8s cubic-bezier(0.25, 0.8, 0.25, 1.2),
-                  top 0.8s cubic-bezier(0.25, 0.8, 0.25, 1.2),
+      transition: left 0.6s cubic-bezier(0.25, 0.8, 0.25, 1.2),
+                  top 0.6s cubic-bezier(0.25, 0.8, 0.25, 1.2),
                   transform 0.3s ease;
       transform: translate(-50%, -50%);
       display: block;
@@ -296,6 +291,16 @@
       transition: opacity 0.4s ease, transform 0.4s ease;
       box-shadow: 0 0 20px var(--color-accent-glow);
       animation: none;
+    }
+    
+    .image-panel {
+      background: var(--color-bg-panel);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      position: relative;
     }
 
     .highlight-ring.active {
@@ -337,8 +342,9 @@
     }
 
     .thumbnail-item.active {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+      border-color: #2980b9;
+      box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.3);
+      transform: translateY(-2px);
     }
 
     .thumbnail-item img {
@@ -481,9 +487,9 @@
 
     .content-card {
       background: var(--color-bg-panel);
-      border-radius: var(--radius-md);
+      border-radius: 8px;
       padding: var(--space-lg);
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
       flex: 1;
       min-height: 220px;
       overflow-y: auto;
@@ -650,9 +656,11 @@
     }
 
     .btn:hover:not(:disabled) {
-      background: #f0f5ff;
-      border-color: var(--color-primary);
+      background: #2980b9;
+      border-color: #2980b9;
+      color: #fff;
       transform: translateY(-1px);
+      transition: all 0.3s ease;
     }
 
     .btn:disabled {
@@ -1631,6 +1639,15 @@
       this.bindEvents();
       this.bindChallengeEvents();
       this.loadImage(0);
+      
+      var self = this;
+      window.addEventListener('resize', function() {
+        var step = self.getCurrentStep();
+        if (step) {
+          self.updateCursorPosition(step);
+          self.updateHighlightRing(step);
+        }
+      });
     };
 
     this.handleQuestion = function(questionText) {
