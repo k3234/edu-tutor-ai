@@ -1,0 +1,2411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI助学 - 动态讲解系统</title>
+
+  <style>
+    :root {
+      --color-primary: #667eea;
+      --color-primary-light: #818cf8;
+      --color-primary-dark: #4f46e5;
+      --color-accent: #f59e0b;
+      --color-accent-glow: rgba(245, 158, 11, 0.4);
+      --color-bg-main: #f8fafc;
+      --color-bg-panel: #ffffff;
+      --color-bg-dark: #1e293b;
+      --color-text-primary: #1e293b;
+      --color-text-secondary: #64748b;
+      --color-text-muted: #94a3b8;
+      --color-text-light: #f1f5f9;
+      --color-success: #10b981;
+      --color-error: #ef4444;
+      --color-warning: #f59e0b;
+      --color-border: #e2e8f0;
+      --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+      --radius-sm: 6px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --space-xs: 4px;
+      --space-sm: 8px;
+      --space-md: 16px;
+      --space-lg: 24px;
+      --space-xl: 32px;
+      --font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", sans-serif;
+      --font-size-xs: 12px;
+      --font-size-sm: 13px;
+      --font-size-md: 15px;
+      --font-size-lg: 18px;
+      --font-size-xl: 22px;
+    }
+
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-family);
+      font-size: var(--font-size-md);
+      color: var(--color-text-primary);
+      background: var(--color-bg-main);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .app-layout {
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      min-height: 100vh;
+    }
+
+    .app-header {
+      background: var(--color-bg-panel);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 200;
+    }
+
+    .app-logo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-sm);
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      color: var(--color-primary-dark);
+    }
+
+    .app-logo svg {
+      width: 32px;
+      height: 32px;
+      flex-shrink: 0;
+    }
+
+    .smart-qa-area {
+      display: flex;
+      gap: var(--space-sm);
+      align-items: center;
+      flex: 1;
+      max-width: 600px;
+      margin: 0 var(--space-xl);
+    }
+
+    .smart-qa-area input {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1px solid var(--color-border);
+      border-radius: 24px;
+      font-size: var(--font-size-sm);
+      outline: none;
+      transition: all 0.2s;
+      background: var(--color-bg-main);
+    }
+
+    .smart-qa-area input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      background: var(--color-bg-panel);
+    }
+
+    .smart-qa-area input::placeholder {
+      color: var(--color-text-muted);
+    }
+
+    .smart-qa-area .btn {
+      padding: 10px 20px;
+      border-radius: 24px;
+    }
+
+    .qa-result-area {
+      background: var(--color-bg-panel);
+      border-bottom: 1px solid var(--color-border);
+      padding: var(--space-md) var(--space-xl);
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .qa-result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-md);
+    }
+
+    .qa-result-title {
+      font-weight: 600;
+      color: var(--color-primary);
+      font-size: var(--font-size-md);
+    }
+
+    .qa-close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .qa-close-btn:hover {
+      color: var(--color-error);
+    }
+
+    .qa-result-content {
+      background: var(--color-bg-main);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      margin-bottom: var(--space-md);
+      line-height: 1.8;
+      font-size: var(--font-size-sm);
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .qa-result-content p {
+      margin-bottom: var(--space-sm);
+    }
+
+    .qa-result-content strong {
+      color: var(--color-primary);
+    }
+
+    .qa-loading {
+      text-align: center;
+      padding: var(--space-lg);
+      color: var(--color-text-secondary);
+    }
+
+    .qa-loading::after {
+      content: '';
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid var(--color-border);
+      border-top-color: var(--color-primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-left: var(--space-sm);
+      vertical-align: middle;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .qa-actions {
+      display: flex;
+      gap: var(--space-sm);
+    }
+
+    .btn-sm {
+      padding: var(--space-xs) var(--space-md);
+      font-size: var(--font-size-xs);
+    }
+
+    .app-main {
+      display: grid;
+      grid-template-columns: 1fr 450px;
+      gap: var(--space-xl);
+      padding: var(--space-xl);
+      max-width: 1500px;
+      margin: 0 auto;
+      width: 100%;
+      min-height: 0;
+    }
+
+    .app-footer {
+      background: var(--color-bg-panel);
+      border-top: 1px solid var(--color-border);
+      padding: var(--space-sm) var(--space-xl);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+    }
+
+    .image-panel {
+      background: var(--color-bg-panel);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .image-display-area {
+      position: relative;
+      flex: 1;
+      min-height: 520px;
+      background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .image-display-area img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      user-select: none;
+    }
+
+    .cursor-marker {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      pointer-events: none;
+      z-index: 50;
+      transition: left 0.8s cubic-bezier(0.25, 0.8, 0.25, 1.2),
+                  top 0.8s cubic-bezier(0.25, 0.8, 0.25, 1.2),
+                  transform 0.3s ease;
+      transform: translate(-50%, -50%);
+      display: block;
+    }
+
+    .cursor-marker svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 0 8px var(--color-accent-glow));
+    }
+
+    .highlight-ring {
+      position: absolute;
+      border: 3px solid var(--color-accent);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 49;
+      opacity: 0;
+      transform: scale(0.8);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      box-shadow: 0 0 20px var(--color-accent-glow);
+      animation: none;
+    }
+
+    .highlight-ring.active {
+      opacity: 1;
+      transform: scale(1);
+      animation: ringPulse 2s infinite;
+    }
+
+    @keyframes ringPulse {
+      0%   { box-shadow: 0 0 10px var(--color-accent-glow); }
+      50%  { box-shadow: 0 0 30px var(--color-accent-glow), 0 0 50px rgba(245,158,11,0.15); }
+      100% { box-shadow: 0 0 10px var(--color-accent-glow); }
+    }
+
+    .thumbnail-strip {
+      display: flex;
+      gap: var(--space-sm);
+      padding: var(--space-md);
+      overflow-x: auto;
+      border-top: 1px solid var(--color-border);
+      background: var(--color-bg-main);
+    }
+
+    .thumbnail-item {
+      flex-shrink: 0;
+      width: 100px;
+      cursor: pointer;
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+      border: 2px solid transparent;
+      transition: all 0.2s;
+      background: var(--color-bg-panel);
+    }
+
+    .thumbnail-item:hover {
+      border-color: var(--color-primary-light);
+      box-shadow: var(--shadow-sm);
+      transform: translateY(-2px);
+    }
+
+    .thumbnail-item.active {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+    }
+
+    .thumbnail-item img {
+      width: 100%;
+      height: 60px;
+      object-fit: cover;
+      display: block;
+    }
+
+    .thumbnail-label {
+      display: block;
+      font-size: 10px;
+      color: var(--color-text-secondary);
+      padding: 4px 6px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .image-label-tag {
+      position: absolute;
+      background: rgba(30, 41, 59, 0.95);
+      color: var(--color-text-light);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      z-index: 52;
+      pointer-events: none;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .image-label-tag.visible {
+      opacity: 1;
+    }
+
+    .image-label-tag::after {
+      content: '';
+      position: absolute;
+      bottom: -6px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 6px solid rgba(30, 41, 59, 0.95);
+    }
+
+    .teaching-panel {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-md);
+      min-height: 0;
+    }
+
+    .stage-nav {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: var(--space-sm);
+      padding: var(--space-sm) 0;
+    }
+
+    .stage-dot {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: 2px solid var(--color-border);
+      background: var(--color-bg-panel);
+      transition: all 0.3s;
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      font-weight: 600;
+    }
+
+    .stage-dot.active {
+      border-color: var(--color-primary);
+      background: var(--color-primary);
+      color: #fff;
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .stage-dot.completed {
+      border-color: var(--color-success);
+      background: var(--color-success);
+      color: #fff;
+    }
+
+    .stage-dot.pending {
+      border-color: #e2e8f0;
+      background: #f8fafc;
+      color: #cbd5e1;
+    }
+
+    .stage-dot:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
+    }
+
+    .stage-connector {
+      width: 32px;
+      height: 2px;
+      background: var(--color-border);
+    }
+
+    .stage-connector.done {
+      background: var(--color-success);
+    }
+
+    .stage-header {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-sm);
+      color: white;
+    }
+
+    .stage-header h2 {
+      font-size: var(--font-size-lg);
+      font-weight: 600;
+      margin-bottom: var(--space-xs);
+    }
+
+    .stage-badge {
+      font-size: var(--font-size-xs);
+      color: rgba(255,255,255,0.8);
+      background: rgba(255,255,255,0.2);
+      padding: 3px 10px;
+      border-radius: 12px;
+      display: inline-block;
+    }
+
+    .content-card {
+      background: var(--color-bg-panel);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-sm);
+      flex: 1;
+      min-height: 220px;
+      overflow-y: auto;
+      border: 1px solid var(--color-border);
+    }
+
+    .content-card h3 {
+      font-size: var(--font-size-md);
+      color: var(--color-text-secondary);
+      margin-bottom: var(--space-md);
+      font-weight: 500;
+      padding-bottom: var(--space-sm);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .content-body {
+      font-size: var(--font-size-md);
+      line-height: 1.8;
+      white-space: pre-wrap;
+      color: var(--color-text-primary);
+    }
+
+    .quiz-zone {
+      background: var(--color-bg-panel);
+      border-radius: var(--radius-md);
+      padding: var(--space-lg);
+      box-shadow: var(--shadow-sm);
+      border: 1px solid var(--color-border);
+      display: none;
+    }
+
+    .quiz-zone h3 {
+      font-size: var(--font-size-md);
+      margin-bottom: var(--space-md);
+      color: var(--color-primary-dark);
+    }
+
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .quiz-option-btn {
+      background: var(--color-bg-main);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-md);
+      padding: 14px 18px;
+      text-align: left;
+      cursor: pointer;
+      font-size: var(--font-size-md);
+      transition: all 0.2s;
+      color: var(--color-text-primary);
+      font-family: inherit;
+    }
+
+    .quiz-option-btn:hover:not(:disabled) {
+      border-color: var(--color-primary);
+      background: #f0f5ff;
+      transform: translateX(4px);
+    }
+
+    .quiz-option-btn.correct {
+      border-color: var(--color-success);
+      background: #ecfdf5;
+      color: var(--color-success);
+    }
+
+    .quiz-option-btn.wrong {
+      border-color: var(--color-error);
+      background: #fef2f2;
+      color: var(--color-error);
+    }
+
+    .quiz-option-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .quiz-feedback {
+      margin-top: var(--space-md);
+      padding: var(--space-md);
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      display: none;
+    }
+
+    .quiz-feedback.correct {
+      background: #ecfdf5;
+      color: var(--color-success);
+      border: 1px solid #10b981;
+    }
+
+    .quiz-feedback.wrong {
+      background: #fef2f2;
+      color: var(--color-error);
+      border: 1px solid #ef4444;
+    }
+
+    .quiz-reveal-btn {
+      display: inline-block;
+      margin-top: var(--space-sm);
+      background: none;
+      border: 1px solid var(--color-primary);
+      color: var(--color-primary);
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: var(--font-size-sm);
+      transition: all 0.2s;
+    }
+
+    .quiz-reveal-btn:hover {
+      background: var(--color-primary);
+      color: #fff;
+    }
+
+    .answer-reveal {
+      margin-top: var(--space-sm);
+      padding: var(--space-md);
+      background: #ecfdf5;
+      border-radius: var(--radius-sm);
+      display: none;
+      font-size: var(--font-size-md);
+    }
+
+    .answer-reveal strong {
+      color: var(--color-success);
+    }
+
+    .answer-explain {
+      margin-top: var(--space-sm);
+      padding: var(--space-md);
+      display: none;
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+      line-height: 1.6;
+      background: var(--color-bg-main);
+      border-radius: var(--radius-sm);
+    }
+
+    .control-bar {
+      display: flex;
+      gap: var(--space-sm);
+      justify-content: center;
+      padding: var(--space-sm) 0;
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 12px 24px;
+      border-radius: 28px;
+      border: 1.5px solid var(--color-border);
+      background: var(--color-bg-panel);
+      color: var(--color-text-primary);
+      font-size: var(--font-size-sm);
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: inherit;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: #f0f5ff;
+      border-color: var(--color-primary);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+      color: #fff;
+      border-color: var(--color-primary);
+      font-weight: 500;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: linear-gradient(135deg, var(--color-primary-dark) 0%, #4338ca 100%);
+      border-color: var(--color-primary-dark);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary.playing {
+      background: linear-gradient(135deg, var(--color-accent) 0%, #d97706 100%);
+      border-color: var(--color-accent);
+    }
+
+    .btn svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .progress-section {
+      background: var(--color-bg-panel);
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .progress-bar-track {
+      height: 6px;
+      background: var(--color-border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+      border-radius: 3px;
+      transition: width 0.5s ease;
+      width: 0%;
+    }
+
+    .progress-text {
+      display: flex;
+      justify-content: space-between;
+      margin-top: var(--space-sm);
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+    }
+
+    .shortcut-hints {
+      font-size: var(--font-size-xs);
+      color: var(--color-text-muted);
+      display: flex;
+      gap: var(--space-md);
+    }
+
+    .shortcut-key {
+      display: inline-block;
+      background: var(--color-bg-dark);
+      color: var(--color-text-light);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      margin: 0 2px;
+    }
+
+    .analysis-result {
+      background: var(--color-bg-panel);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-md);
+      padding: var(--space-md);
+      margin-bottom: var(--space-md);
+      display: none;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .analysis-header {
+      font-size: var(--font-size-md);
+      font-weight: 600;
+      color: var(--color-primary);
+      margin-bottom: var(--space-sm);
+      padding-bottom: var(--space-xs);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .analysis-item {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      margin-bottom: var(--space-xs);
+      line-height: 1.5;
+    }
+
+    .analysis-item .label {
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+
+    .analysis-suggestion {
+      margin-top: var(--space-sm);
+      padding: var(--space-sm);
+      background: var(--color-bg-main);
+      border-radius: var(--radius-sm);
+      font-size: var(--font-size-sm);
+      color: var(--color-text-primary);
+      line-height: 1.6;
+    }
+
+    .challenge-entrance {
+      background: linear-gradient(135deg, #667eea 0%, #8b5cf6 100%);
+      border-radius: var(--radius-xl);
+      padding: var(--space-xl);
+      margin-top: var(--space-md);
+      text-align: center;
+      color: white;
+      animation: slideIn 0.4s ease;
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+
+    .challenge-entrance-icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto var(--space-md);
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .challenge-entrance-icon svg {
+      width: 36px;
+      height: 36px;
+    }
+
+    .challenge-entrance-text h3 {
+      font-size: var(--font-size-xl);
+      margin-bottom: var(--space-xs);
+    }
+
+    .challenge-entrance-text p {
+      font-size: var(--font-size-sm);
+      opacity: 0.9;
+      margin-bottom: var(--space-lg);
+    }
+
+    .btn-challenge {
+      background: white;
+      color: var(--color-primary);
+      border: none;
+      padding: var(--space-md) var(--space-xl);
+      border-radius: var(--radius-lg);
+      font-size: var(--font-size-md);
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: var(--space-sm);
+      transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    }
+
+    .btn-challenge:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+    }
+
+    .challenge-mode {
+      margin-top: var(--space-md);
+    }
+
+    .challenge-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--space-lg);
+      padding-bottom: var(--space-md);
+      border-bottom: 2px solid var(--color-primary);
+    }
+
+    .challenge-header h3 {
+      color: var(--color-primary);
+      font-size: var(--font-size-lg);
+    }
+
+    .challenge-progress {
+      background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+      color: white;
+      padding: var(--space-xs) var(--space-md);
+      border-radius: 20px;
+      font-weight: 600;
+    }
+
+    .challenge-question {
+      font-size: var(--font-size-md);
+      line-height: 1.8;
+      margin-bottom: var(--space-lg);
+      padding: var(--space-lg);
+      background: var(--color-bg-main);
+      border-radius: var(--radius-md);
+      border-left: 4px solid var(--color-primary);
+    }
+
+    .challenge-options {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-sm);
+    }
+
+    .challenge-option-btn {
+      padding: var(--space-md);
+      background: var(--color-bg-panel);
+      border: 2px solid var(--color-border);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-md);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .challenge-option-btn:hover:not(:disabled) {
+      border-color: var(--color-primary);
+      background: #f0f5ff;
+      transform: translateX(4px);
+    }
+
+    .challenge-option-btn.correct {
+      background: #ecfdf5;
+      border-color: var(--color-success);
+      color: #059669;
+    }
+
+    .challenge-option-btn.wrong {
+      background: #fef2f2;
+      border-color: var(--color-error);
+      color: #dc2626;
+    }
+
+    .challenge-option-btn:disabled {
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .challenge-feedback {
+      margin-top: var(--space-md);
+      padding: var(--space-md);
+      border-radius: var(--radius-md);
+      font-size: var(--font-size-sm);
+    }
+
+    .challenge-feedback.correct {
+      background: #ecfdf5;
+      color: #059669;
+      border: 1px solid var(--color-success);
+    }
+
+    .challenge-feedback.wrong {
+      background: #fef2f2;
+      color: #dc2626;
+      border: 1px solid var(--color-error);
+    }
+
+    .challenge-result {
+      text-align: center;
+      padding: var(--space-xl);
+      background: var(--color-bg-panel);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow-lg);
+    }
+
+    .challenge-result h4 {
+      font-size: var(--font-size-xl);
+      color: var(--color-primary);
+      margin-bottom: var(--space-xl);
+    }
+
+    .result-stats {
+      display: flex;
+      justify-content: center;
+      gap: var(--space-xl);
+      margin-bottom: var(--space-xl);
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-value {
+      display: block;
+      font-size: var(--font-size-xl);
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .stat-label {
+      font-size: var(--font-size-sm);
+      color: var(--color-text-secondary);
+    }
+
+    .weak-points {
+      background: #fffbeb;
+      border: 1px solid #fbbf24;
+      border-radius: var(--radius-md);
+      padding: var(--space-md);
+      margin-bottom: var(--space-lg);
+      text-align: left;
+    }
+
+    .weak-points h5 {
+      color: #92400e;
+      margin-bottom: var(--space-sm);
+    }
+
+    .weak-points ul {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .weak-points li {
+      color: #92400e;
+      padding: var(--space-xs) 0;
+      font-size: var(--font-size-sm);
+    }
+
+    .weak-points li::before {
+      content: "注意：";
+    }
+
+    .result-feedback {
+      font-size: var(--font-size-md);
+      margin-bottom: var(--space-lg);
+      padding: var(--space-lg);
+      border-radius: var(--radius-md);
+    }
+
+    .result-feedback.excellent {
+      background: #ecfdf5;
+      color: #059669;
+    }
+
+    .result-feedback.good {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .result-feedback.needs-review {
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+    .challenge-result .btn {
+      margin: 0 var(--space-sm);
+    }
+
+    @media (max-width: 960px) {
+      .app-main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+        padding: var(--space-md);
+      }
+
+      .image-display-area {
+        min-height: 240px;
+      }
+
+      .teaching-panel {
+        max-width: 100%;
+      }
+
+      .thumbnail-strip {
+        justify-content: flex-start;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .app-header {
+        padding: var(--space-sm) var(--space-md);
+        flex-wrap: wrap;
+        gap: var(--space-sm);
+      }
+
+      .app-logo {
+        font-size: var(--font-size-md);
+      }
+
+      .smart-qa-area {
+        width: 100%;
+        margin: 0;
+      }
+
+      .image-display-area {
+        min-height: 180px;
+      }
+
+      .stage-dot {
+        width: 32px;
+        height: 32px;
+        font-size: 10px;
+      }
+
+      .stage-connector {
+        width: 20px;
+      }
+
+      .control-bar {
+        flex-wrap: wrap;
+        gap: var(--space-xs);
+      }
+
+      .btn {
+        padding: 10px 16px;
+        font-size: var(--font-size-xs);
+      }
+
+      .challenge-entrance {
+        padding: var(--space-md);
+      }
+
+      .challenge-entrance-icon {
+        width: 56px;
+        height: 56px;
+      }
+
+      .challenge-entrance-icon svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      .challenge-entrance-text h3 {
+        font-size: var(--font-size-md);
+      }
+
+      .btn-challenge {
+        padding: var(--space-sm) var(--space-lg);
+        font-size: var(--font-size-sm);
+      }
+
+      .challenge-header {
+        flex-direction: column;
+        gap: var(--space-sm);
+        text-align: center;
+      }
+
+      .challenge-question {
+        padding: var(--space-sm);
+        font-size: var(--font-size-sm);
+      }
+
+      .challenge-option-btn {
+        padding: var(--space-sm);
+        font-size: var(--font-size-sm);
+      }
+
+      .result-stats {
+        gap: var(--space-md);
+      }
+
+      .stat-value {
+        font-size: var(--font-size-lg);
+      }
+
+      .app-footer {
+        padding: var(--space-sm) var(--space-md);
+        font-size: var(--font-size-xs);
+      }
+
+      .shortcut-hints {
+        display: none;
+      }
+
+      .thumbnail-strip {
+        height: 50px;
+      }
+
+      .thumbnail-item img {
+        height: 40px;
+      }
+    }
+
+    @media (hover: none) and (pointer: coarse) {
+      .quiz-option-btn, .challenge-option-btn, .control-bar .btn {
+        min-height: 48px;
+        min-width: 48px;
+      }
+
+      .thumbnail-item {
+        min-width: 60px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-layout">
+    <header class="app-header">
+      <div class="app-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="var(--color-primary)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>
+        </svg>
+        AI助学
+      </div>
+      
+      <div class="smart-qa-area">
+        <input type="text" id="questionInput" placeholder="输入问题，AI帮您解答" />
+        <button id="analyzeBtn" class="btn btn-primary">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+            <polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          提问
+        </button>
+      </div>
+    </header>
+    
+    <div class="qa-result-area" id="qaResultArea" style="display: none;">
+      <div class="qa-result-header">
+        <span class="qa-result-title">AI 智能解答</span>
+        <button class="qa-close-btn" id="qaCloseBtn">×</button>
+      </div>
+      <div class="qa-result-content" id="qaResultContent"></div>
+      <div class="qa-actions">
+        <button class="btn btn-sm" id="addToQuestionBankBtn">+ 加入题库</button>
+        <button class="btn btn-sm" id="qaRetryBtn">重新回答</button>
+      </div>
+    </div>
+    
+    <main class="app-main">
+      <section class="image-panel" id="imagePanel">
+        <div class="image-display-area">
+          <img id="teachingImage" src="" alt="教学图片" loading="eager">
+          
+          <div class="cursor-marker" id="cursorMarker" style="left: 40%; top: 50%;">
+            <svg viewBox="0 0 24 24" fill="var(--color-accent)">
+              <path d="M5 3l14 8-4 1 1 4-15-10z"/>
+            </svg>
+          </div>
+          
+          <div id="ringContainer"></div>
+          
+          <div class="image-label-tag" id="imageLabelTag"></div>
+        </div>
+        
+        <div class="thumbnail-strip" id="imageThumbnails">
+        </div>
+      </section>
+
+      <aside class="teaching-panel">
+        <div id="analysisResult" class="analysis-result" style="display: none;"></div>
+
+        <nav class="stage-nav">
+          <div class="stage-dot active" title="解析问题">1</div>
+          <div class="stage-connector"></div>
+          <div class="stage-dot" title="讲解原理">2</div>
+          <div class="stage-connector"></div>
+          <div class="stage-dot" title="变式测试">3</div>
+          <div class="stage-connector"></div>
+          <div class="stage-dot" title="归纳总结">4</div>
+        </nav>
+
+        <div class="stage-header">
+          <h2 id="stageTitle">一、解析问题</h2>
+          <span class="stage-badge" id="stageBadge">阶段 1/4</span>
+        </div>
+
+        <article class="content-card">
+          <h3 id="stepTitle">题目展示</h3>
+          <div class="content-body" id="stepContent">
+            点击自动播放或使用方向键开始学习。
+          </div>
+        </article>
+
+        <section class="quiz-zone" id="quizZone">
+          <h3>变式训练 - 请选择正确答案</h3>
+          <div class="quiz-options" id="quizOptions"></div>
+          <div class="quiz-feedback" id="quizFeedback"></div>
+          <div class="answer-reveal" id="answerReveal"></div>
+          <div class="answer-explain" id="answerExplain"></div>
+        </section>
+
+        <div class="control-bar">
+          <button class="btn" id="prevBtn" title="上一步 (左箭头)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="15 18 9 12 15 6"/>
+            </svg>
+            上一步
+          </button>
+          <button class="btn btn-primary" id="playBtn" title="自动播放 (空格)">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="8,4 20,12 8,20"/>
+            </svg>
+            自动播放
+          </button>
+          <button class="btn" id="autoGuideBtn" title="从头开始自动引导">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3"/>
+            </svg>
+            重头播放
+          </button>
+          <button class="btn" id="nextBtn" title="下一步 (右箭头)">
+            下一步
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="progress-section">
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="progressBar"></div>
+          </div>
+          <div class="progress-text">
+            <span id="stepIndicator">阶段 1/4 | 步骤 1/3</span>
+            <span id="quizStats">暂无闯关记录</span>
+          </div>
+        </div>
+
+        <div class="challenge-entrance" id="challengeEntrance" style="display: none;">
+          <div class="challenge-entrance-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+              <circle cx="12" cy="8" r="5"/>
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+              <line x1="12" y1="11" x2="12" y2="14"/>
+            </svg>
+          </div>
+          <div class="challenge-entrance-text">
+            <h3>恭喜完成四段式学习！</h3>
+            <p>您已完成知识讲解，现在可以开始闯关检测，检验学习效果。</p>
+          </div>
+          <button class="btn btn-challenge" id="startChallengeBtn">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            开始闯关
+          </button>
+        </div>
+
+        <div class="challenge-mode" id="challengeMode" style="display: none;">
+          <div class="challenge-header">
+            <h3>闯关检测</h3>
+            <div class="challenge-progress">
+              <span id="challengeProgress">1/5</span>
+            </div>
+          </div>
+          <div class="challenge-question" id="challengeQuestion"></div>
+          <div class="challenge-options" id="challengeOptions"></div>
+          <div class="challenge-feedback" id="challengeFeedback" style="display: none;"></div>
+          <div class="challenge-result" id="challengeResult" style="display: none;">
+            <h4>闯关完成！</h4>
+            <div class="result-stats">
+              <div class="stat-item">
+                <span class="stat-value" id="finalAccuracy">0%</span>
+                <span class="stat-label">正确率</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value" id="finalCorrect">0</span>
+                <span class="stat-label">答对</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-value" id="finalWrong">0</span>
+                <span class="stat-label">答错</span>
+              </div>
+            </div>
+            <div class="weak-points" id="weakPoints" style="display: none;">
+              <h5>薄弱知识点：</h5>
+              <ul id="weakPointsList"></ul>
+            </div>
+            <div class="result-feedback" id="resultFeedback"></div>
+            <button class="btn btn-primary" id="retryChallengeBtn">重新挑战</button>
+            <button class="btn" id="backToLearningBtn">返回学习</button>
+          </div>
+        </div>
+
+      </aside>
+    </main>
+
+    <footer class="app-footer">
+      <div class="shortcut-hints">
+        <span><span class="shortcut-key">←</span> 上一步</span>
+        <span><span class="shortcut-key">→</span> 下一步</span>
+        <span><span class="shortcut-key">Space</span> 播放/暂停</span>
+      </div>
+      <span>AI助学 · 动态讲解系统</span>
+    </footer>
+
+  </div>
+
+  <script>
+  var QUESTION_ANALYSIS_CONFIG = {
+    subjects: {
+      "物理": ["力", "运动", "能量", "牛顿", "加速度", "质量", "速度", "位移"],
+      "数学": ["函数", "方程", "不等式", "几何", "三角", "导数", "概率", "数列"],
+      "化学": ["反应", "元素", "化合物", "摩尔", "化学式", "方程", "氧化"]
+    },
+    questionTypes: {
+      "基础概念": ["是什么", "定义", "概念", "含义", "什么叫"],
+      "原理分析": ["为什么", "原理", "原因", "解释", "推导"],
+      "计算应用": ["计算", "求", "等于多少", "多少"],
+      "综合分析": ["分析", "讨论", "比较", "区别", "联系"]
+    },
+    teachingStages: {
+      "基础概念": "parse",
+      "原理分析": "principle", 
+      "计算应用": "test",
+      "综合分析": "summary"
+    }
+  };
+
+  var KNOWLEDGE_POINTS_LIBRARY = [
+    { subject: "物理", module: "牛顿第二定律", keywords: ["牛顿第二定律", "F=ma", "加速度", "合外力"], imageIndex: 0 },
+    { subject: "物理", module: "受力分析", keywords: ["受力分析", "重力", "弹力", "摩擦力"], imageIndex: 1 },
+    { subject: "物理", module: "力学综合", keywords: ["力学", "运动学", "动力学"], imageIndex: 2 }
+  ];
+
+  var QuestionAnalyzer = function() {
+    this.analyze = function(questionText) {
+      var result = {
+        subject: "物理",
+        module: "牛顿第二定律",
+        questionType: "计算应用",
+        teachingStage: "parse",
+        confidence: 0.8,
+        suggestion: ""
+      };
+
+      if (!questionText || questionText.trim() === "") {
+        result.suggestion = "请输入您想学习的问题";
+        return result;
+      }
+
+      var text = questionText.trim();
+
+      for (var subject in QUESTION_ANALYSIS_CONFIG.subjects) {
+        if (QUESTION_ANALYSIS_CONFIG.subjects[subject].some(function(k) { return text.indexOf(k) !== -1; })) {
+          result.subject = subject;
+          break;
+        }
+      }
+
+      for (var type in QUESTION_ANALYSIS_CONFIG.questionTypes) {
+        if (QUESTION_ANALYSIS_CONFIG.questionTypes[type].some(function(k) { return text.indexOf(k) !== -1; })) {
+          result.questionType = type;
+          result.teachingStage = QUESTION_ANALYSIS_CONFIG.teachingStages[type];
+          break;
+        }
+      }
+
+      for (var i = 0; i < KNOWLEDGE_POINTS_LIBRARY.length; i++) {
+        var kp = KNOWLEDGE_POINTS_LIBRARY[i];
+        if (kp.subject === result.subject) {
+          if (kp.keywords.some(function(k) { return text.indexOf(k) !== -1; })) {
+            result.module = kp.module;
+            result.imageIndex = kp.imageIndex;
+            result.confidence = 0.9;
+            break;
+          }
+        }
+      }
+
+      result.suggestion = "已识别：【" + result.subject + "】·【" + result.module + "】，" + result.questionType + "题型";
+      return result;
+    };
+  };
+
+  var questionAnalyzer = new QuestionAnalyzer();
+
+  var SmartQASystem = function() {
+    var self = this;
+    
+    this.questionBank = [];
+    
+    this.loadQuestionBank = function() {
+      try {
+        var saved = localStorage.getItem('ai_question_bank');
+        if (saved) {
+          this.questionBank = JSON.parse(saved);
+        }
+      } catch (e) {
+        console.log('无法加载题库');
+      }
+    };
+    
+    this.saveQuestionBank = function() {
+      try {
+        localStorage.setItem('ai_question_bank', JSON.stringify(this.questionBank));
+      } catch (e) {
+        console.log('无法保存题库');
+      }
+    };
+    
+    this.addToQuestionBank = function(question, answer) {
+      var entry = {
+        question: question,
+        answer: answer,
+        timestamp: new Date().toISOString(),
+        subject: questionAnalyzer.analyze(question).subject,
+        module: questionAnalyzer.analyze(question).module
+      };
+      
+      this.questionBank.push(entry);
+      this.saveQuestionBank();
+      return entry;
+    };
+    
+    this.searchOnline = function(question) {
+      var analysis = questionAnalyzer.analyze(question);
+      var searchResults = [];
+      
+      if (analysis.subject === '物理') {
+        searchResults = [
+          '牛顿第二定律是高中物理核心内容',
+          'F=ma，其中F是合外力，m是质量，a是加速度',
+          '加速度方向与合外力方向相同',
+          '国际单位制中，质量的单位是kg'
+        ];
+      } else if (analysis.subject === '数学') {
+        searchResults = [
+          '二次函数是重要的函数类型',
+          '顶点坐标公式：(-b/2a, (4ac-b²)/4a)',
+          '开口方向由a的符号决定'
+        ];
+      } else {
+        searchResults = [
+          '这是重要的知识点',
+          '需要理解基本概念和公式'
+        ];
+      }
+      
+      return searchResults;
+    };
+    
+    this.generateAnswer = function(question) {
+      var analysis = questionAnalyzer.analyze(question);
+      var searchResults = this.searchOnline(question);
+      
+      var answer = '<p><strong>问题：</strong>' + question + '</p>';
+      answer += '<p><strong>学科：</strong>' + analysis.subject + ' | <strong>模块：</strong>' + analysis.module + '</p>';
+      answer += '<p><strong>题型：</strong>' + analysis.questionType + '</p>';
+      
+      answer += '<br><strong>相关知识点：</strong>';
+      for (var i = 0; i < searchResults.length; i++) {
+        answer += '<p>• ' + searchResults[i] + '</p>';
+      }
+      
+      if (analysis.subject === '物理') {
+        if (question.indexOf('牛顿') !== -1 || question.indexOf('加速度') !== -1) {
+          answer += '<br><strong>详细解释：</strong>';
+          answer += '<p>牛顿第二定律公式：<strong>F = ma</strong></p>';
+          answer += '<p>其中：</p>';
+          answer += '<p>• F - 合外力（单位：N牛顿）</p>';
+          answer += '<p>• m - 质量（单位：kg千克）</p>';
+          answer += '<p>• a - 加速度（单位：m/s²米每二次方秒）</p>';
+          answer += '<br><p><strong>使用技巧：</strong></p>';
+          answer += '<p>1. 先进行受力分析</p>';
+          answer += '<p>2. 统一使用国际单位制</p>';
+          answer += '<p>3. 注意方向的同异性</p>';
+        }
+      }
+      
+      answer += '<br><p><em>以上内容由AI智能搜索整理，如有疑问可进一步提问。</em></p>';
+      
+      return answer;
+    };
+    
+    this.loadQuestionBank();
+  };
+
+  var smartQASystem = new SmartQASystem();
+
+  var TEACHING_IMAGE_LIBRARY = [
+    { id: "img_newton_001", path: "https://picsum.photos/seed/physics1/800/500", title: "牛顿第二定律演示", subject: "物理", module: "牛顿第二定律", description: "展示牛顿第二定律F=ma的基本原理", marks: [{ x: 30, y: 30, label: "力 F (单位：N)" }, { x: 50, y: 50, label: "质量 m (单位：kg)" }, { x: 70, y: 30, label: "加速度 a (单位：m/s²)" }] },
+    { id: "img_newton_002", path: "https://picsum.photos/seed/physics2/800/500", title: "受力分析示意图", subject: "物理", module: "牛顿第二定律·受力分析", description: "展示物体在力作用下的运动分析", marks: [{ x: 25, y: 40, label: "推力 F" }, { x: 50, y: 70, label: "摩擦力 f" }, { x: 75, y: 40, label: "合外力 F合" }] },
+    { id: "img_newton_003", path: "https://picsum.photos/seed/physics3/800/500", title: "F=ma关系图", subject: "物理", module: "牛顿第二定律·公式理解", description: "展示力、质量、加速度三者的定量关系", marks: [{ x: 50, y: 50, label: "F = m × a" }, { x: 20, y: 70, label: "m = F/a" }, { x: 80, y: 70, label: "a = F/m" }] },
+    { id: "img_newton_004", path: "https://picsum.photos/seed/physics4/800/500", title: "电梯问题分析", subject: "物理", module: "牛顿第二定律·超重失重", description: "展示电梯中物体的超重与失重现象", marks: [{ x: 50, y: 25, label: "支持力 N" }, { x: 50, y: 55, label: "重力 G = mg" }, { x: 50, y: 80, label: "合外力 F = N - G" }] },
+    { id: "img_newton_005", path: "https://picsum.photos/seed/physics5/800/500", title: "斜面受力分析", subject: "物理", module: "牛顿第二定律·斜面问题", description: "展示斜面上物体的受力与运动分析", marks: [{ x: 50, y: 25, label: "重力 mg" }, { x: 30, y: 50, label: "支持力 N" }, { x: 70, y: 50, label: "下滑力 mgsinθ" }] },
+    { id: "img_newton_006", path: "https://picsum.photos/seed/physics6/800/500", title: "连接体问题", subject: "物理", module: "牛顿第二定律·整体法", description: "展示多个物体连接在一起的运动分析", marks: [{ x: 30, y: 40, label: "m₁ 受力分析" }, { x: 50, y: 60, label: "细绳张力 T" }, { x: 70, y: 40, label: "m₂ 受力分析" }] }
+  ];
+
+  var TEACHING_STEPS = [
+    { stage: "parse", stageTitle: "一、解析问题", icon: "search", steps: [
+        { title: "题目展示", content: "【例题】一个质量为5kg的物体，受到20N的水平拉力，求物体的加速度。", cursorX: 50, cursorY: 50, ring: null },
+        { title: "画受力图", content: "首先对物体进行受力分析：\n① 重力 G = mg = 5kg × 10m/s² = 50N（竖直向下）\n② 支持力 N（竖直向上，与重力平衡）\n③ 拉力 F = 20N（水平向右）\n④ 摩擦力 f = 0（无摩擦）\n\n水平方向：只有拉力 F → F合 = 20N", cursorX: 30, cursorY: 40, ring: { x: 30, y: 40, size: 60 } },
+        { title: "找已知量", content: "从题目中提取已知量：\n\n● 质量 m = 5 kg\n● 拉力 F = 20 N\n● 摩擦力 f = 0 N\n● 方向：水平\n\n求解目标：加速度 a\n\n注意：单位必须统一使用国际单位制！", cursorX: 70, cursorY: 30, ring: { x: 70, y: 30, size: 55 } }
+    ] },
+    { stage: "principle", stageTitle: "二、讲解原理", icon: "lightbulb", steps: [
+        { title: "定律内容", content: "牛顿第二定律：\n\n物体的加速度与所受合外力成正比，与质量成反比。\n\n【公式】F = ma\n\n各物理量含义：\n● F - 合外力，单位N（牛顿）\n● m - 质量，单位kg（千克）\n● a - 加速度，单位m/s²（米每二次方秒）", cursorX: 50, cursorY: 30, ring: { x: 50, y: 30, size: 65 } },
+        { title: "公式推导", content: "由 F = ma 可推导：\n\n    a = F/m = 20N/5kg = 4 m/s²\n\n【方向判断】\n加速度方向与合外力方向相同\n\n因为F合 = 20N方向向右\n所以 a = 4m/s²方向向右 →", cursorX: 50, cursorY: 55, ring: { x: 50, y: 55, size: 58 } },
+        { title: "规范解题", content: "【牛顿第二定律规范解题步骤】\n\n① 选对象 - 确定研究物体\n② 看受力 - 画受力分析图\n③ 求合力 - 水平/竖直方向分别求\n④ 列方程 - F合 = ma\n⑤ 代数据 - 统一单位后代入\n⑥ 检验 - 检查结果是否符合实际", cursorX: 35, cursorY: 45, ring: { x: 35, y: 45, size: 52 } }
+    ] },
+    { stage: "test", stageTitle: "三、变式测试", icon: "quiz", steps: [
+        { title: "变式一", content: "【变式练习1】\n\n质量为2kg的物体，受到6N的水平拉力，同时受到2N的摩擦力（方向与拉力相反），求加速度。\n\n【分析】\n● F合 = F拉 - f摩擦 = 6N - 2N = 4N\n● 方向：与拉力相同", cursorX: 50, cursorY: 40, ring: null, isQuiz: true, quizOptions: ["A. 1 m/s²", "B. 2 m/s²", "C. 3 m/s²", "D. 4 m/s²"], quizAnswer: 1, quizExplain: "【解答】\nF合 = 6N - 2N = 4N\n\n a = F/m = 4N ÷ 2kg = 2 m/s²\n\n答案：B\n\n【易错提醒】\n摩擦力方向与运动趋势相反！" },
+        { title: "变式二", content: "【变式练习2】\n\n质量为3kg的物体，受到三个水平力：F₁ = 8N向右，F₂ = 5N向左，F₃ = 2N向右。求加速度。\n\n【分析】\n● 设向右为正\n● F合 = 8N - 5N + 2N = 5N", cursorX: 50, cursorY: 40, ring: null, isQuiz: true, quizOptions: ["A. 5/3 m/s² 向右", "B. 5/3 m/s² 向左", "C. 5 m/s² 向右", "D. 5 m/s² 向左"], quizAnswer: 0, quizExplain: "【解答】\nF合 = 8N - 5N + 2N = 5N（向右）\na = F/m = 5N ÷ 3kg = 5/3 m/s²\n\n答案：A\n\n【技巧】先规定正方向，再带符号运算！" }
+    ] },
+    { stage: "summary", stageTitle: "四、归纳总结", icon: "notebook", steps: [
+        { title: "知识要点", content: "【牛顿第二定律核心要点】\n\n① 基本公式：F = ma\n② 方向一致：a与F合方向相同\n③ 瞬时性：F变化，a同时变化\n④ 独立性：每个力单独产生加速度\n\n【常见题型】\n● 已知F、m求a → 直接代入\n● 已知a、m求F → F = ma\n● 已知F、a求m → m = F/a", cursorX: 30, cursorY: 40, ring: { x: 30, y: 40, size: 58 } },
+        { title: "易错警示", content: "【考试常见错误TOP5】\n\n① 单位未统一\n× F=20N，m=5kg → a=Fm=4\n√ 必须写成a=4 m/s²\n\n② 方向判断错误\n× 认为加速度方向与拉力相反\n√ a方向与F合方向相同\n\n③ 漏力\n√ 一定要画完整的受力图！\n\n④ 质量与重力混淆\n× 把g=10m/s²当成质量\n√ G=mg是重力\n\n⑤ 多物体隔离\n× 连接体直接相加\n√ 先隔离分析，再整体验证", cursorX: 70, cursorY: 45, ring: { x: 70, y: 45, size: 55 } },
+        { title: "记忆口诀", content: "【牛顿第二定律记忆口诀】\n\n合外力定加速度\n质量惯性是抵抗\n方向永远同一致\nF等m乘a记心上\n\n【释义】\n合外力 - 决定加速度大小\n质量 - 质量越大，惯性越大\n同方向 - a与F合方向一致\nF=ma - 三个物理量关系", cursorX: 50, cursorY: 50, ring: { x: 50, y: 50, size: 52 } }
+    ] }
+  ];
+
+  var TeachingEngine = function() {
+    var self = this;
+    
+    this.currentImageIndex = 0;
+    this.currentStageIndex = 0;
+    this.currentStepIndex = 0;
+    this.isAutoPlaying = false;
+    this.autoPlayTimer = null;
+    this.quizResults = { total: 0, correct: 0, wrong: 0 };
+    
+    this.dom = {};
+    
+    this.init = function() {
+      var teachingImageEl = document.getElementById('teachingImage');
+      if (!teachingImageEl) {
+        console.error('无法找到教学图片元素');
+        return;
+      }
+      
+      this.dom.imagePanel = document.getElementById('imagePanel');
+      this.dom.teachingImage = teachingImageEl;
+      this.dom.cursorMarker = document.getElementById('cursorMarker');
+      this.dom.ringContainer = document.getElementById('ringContainer');
+      this.dom.stageTitle = document.getElementById('stageTitle');
+      this.dom.stepTitle = document.getElementById('stepTitle');
+      this.dom.stepContent = document.getElementById('stepContent');
+      this.dom.quizZone = document.getElementById('quizZone');
+      this.dom.quizOptions = document.getElementById('quizOptions');
+      this.dom.quizFeedback = document.getElementById('quizFeedback');
+      this.dom.stepIndicator = document.getElementById('stepIndicator');
+      this.dom.progressBar = document.getElementById('progressBar');
+      this.dom.imageThumbnails = document.getElementById('imageThumbnails');
+      this.dom.playBtn = document.getElementById('playBtn');
+      this.dom.prevBtn = document.getElementById('prevBtn');
+      this.dom.nextBtn = document.getElementById('nextBtn');
+      this.dom.autoGuideBtn = document.getElementById('autoGuideBtn');
+      this.dom.stageDots = document.querySelectorAll('.stage-dot');
+      this.dom.quizStats = document.getElementById('quizStats');
+      this.dom.answerReveal = document.getElementById('answerReveal');
+      this.dom.answerExplain = document.getElementById('answerExplain');
+      
+      this.dom.challengeEntrance = document.getElementById('challengeEntrance');
+      this.dom.challengeMode = document.getElementById('challengeMode');
+      this.dom.startChallengeBtn = document.getElementById('startChallengeBtn');
+      this.dom.challengeProgress = document.getElementById('challengeProgress');
+      this.dom.challengeQuestion = document.getElementById('challengeQuestion');
+      this.dom.challengeOptions = document.getElementById('challengeOptions');
+      this.dom.challengeFeedback = document.getElementById('challengeFeedback');
+      this.dom.challengeResult = document.getElementById('challengeResult');
+      this.dom.finalAccuracy = document.getElementById('finalAccuracy');
+      this.dom.finalCorrect = document.getElementById('finalCorrect');
+      this.dom.finalWrong = document.getElementById('finalWrong');
+      this.dom.weakPoints = document.getElementById('weakPoints');
+      this.dom.weakPointsList = document.getElementById('weakPointsList');
+      this.dom.resultFeedback = document.getElementById('resultFeedback');
+      this.dom.retryChallengeBtn = document.getElementById('retryChallengeBtn');
+      this.dom.backToLearningBtn = document.getElementById('backToLearningBtn');
+      
+      this.initChallengeBank();
+      this.loadProgress();
+      this.renderThumbnails();
+      this.bindEvents();
+      this.bindChallengeEvents();
+      this.loadImage(0);
+    };
+
+    this.handleQuestion = function(questionText) {
+      var qaResultArea = document.getElementById('qaResultArea');
+      var qaResultContent = document.getElementById('qaResultContent');
+      
+      if (!questionText || questionText.trim() === '') {
+        alert('请输入您想学习的问题');
+        return;
+      }
+      
+      qaResultArea.style.display = 'block';
+      qaResultContent.innerHTML = '<div class="qa-loading">正在搜索相关内容并生成回答...</div>';
+      
+      var _self = this;
+      setTimeout(function() {
+        var answer = smartQASystem.generateAnswer(questionText);
+        qaResultContent.innerHTML = answer;
+        
+        _self.currentQA = {
+          question: questionText,
+          answer: answer
+        };
+      }, 1500);
+    };
+    
+    this.configureForQuestion = function(questionText) {
+      var analysis = questionAnalyzer.analyze(questionText);
+      this.showAnalysisResult(analysis);
+      
+      if (analysis.confidence >= 0.5) {
+        var stageMap = { "parse": 0, "principle": 1, "test": 2, "summary": 3 };
+        var targetStage = stageMap[analysis.teachingStage] || 0;
+        
+        if (analysis.imageIndex !== undefined && analysis.imageIndex >= 0) {
+          this.loadImage(analysis.imageIndex);
+        }
+        
+        this.currentStageIndex = targetStage;
+        this.currentStepIndex = 0;
+        this.updateDisplay();
+      }
+      
+      return analysis;
+    };
+    
+    this.addCurrentQuestionToBank = function() {
+      if (this.currentQA) {
+        smartQASystem.addToQuestionBank(this.currentQA.question, this.currentQA.answer);
+        alert('已成功添加到题库！');
+        this.currentQA = null;
+        document.getElementById('qaResultArea').style.display = 'none';
+      } else {
+        alert('当前没有可添加的问答');
+      }
+    };
+
+    this.showAnalysisResult = function(analysis) {
+      var resultContainer = document.getElementById('analysisResult');
+      if (!resultContainer) return;
+      
+      var html = '<div class="analysis-header">问题分析结果</div>';
+      html += '<div class="analysis-item"><span class="label">学科：</span>' + analysis.subject + '</div>';
+      html += '<div class="analysis-item"><span class="label">模块：</span>' + (analysis.module || '未识别') + '</div>';
+      html += '<div class="analysis-item"><span class="label">题型：</span>' + analysis.questionType + '</div>';
+      html += '<div class="analysis-item"><span class="label">匹配度：</span>' + Math.round(analysis.confidence * 100) + '%</div>';
+      html += '<div class="analysis-suggestion">' + analysis.suggestion + '</div>';
+      
+      resultContainer.innerHTML = html;
+      resultContainer.style.display = 'block';
+      
+      setTimeout(function() {
+        resultContainer.style.display = 'none';
+      }, 5000);
+    };
+    
+    this.renderThumbnails = function() {
+      var container = this.dom.imageThumbnails;
+      if (!container) return;
+      container.innerHTML = '';
+      
+      if (!TEACHING_IMAGE_LIBRARY || TEACHING_IMAGE_LIBRARY.length === 0) return;
+      
+      for (var i = 0; i < TEACHING_IMAGE_LIBRARY.length; i++) {
+        (function(index) {
+          var imgData = TEACHING_IMAGE_LIBRARY[index];
+          
+          var thumb = document.createElement('div');
+          thumb.className = 'thumbnail-item';
+          if (index === self.currentImageIndex) {
+            thumb.classList.add('active');
+          }
+          
+          var img = document.createElement('img');
+          img.src = imgData.path;
+          img.alt = imgData.title;
+          img.loading = 'lazy';
+          
+          var label = document.createElement('span');
+          label.className = 'thumbnail-label';
+          label.textContent = imgData.subject + ' | ' + imgData.module;
+          
+          thumb.appendChild(img);
+          thumb.appendChild(label);
+          
+          thumb.addEventListener('click', function() {
+            self.loadImage(index);
+          });
+          
+          container.appendChild(thumb);
+        })(i);
+      }
+    };
+    
+    this.loadImage = function(index) {
+      if (!TEACHING_IMAGE_LIBRARY || TEACHING_IMAGE_LIBRARY.length === 0) return;
+      if (index < 0 || index >= TEACHING_IMAGE_LIBRARY.length) return;
+      
+      this.currentImageIndex = index;
+      
+      var imgData = TEACHING_IMAGE_LIBRARY[index];
+      if (!imgData || !imgData.path) return;
+      
+      this.dom.teachingImage.src = imgData.path;
+      this.dom.teachingImage.alt = imgData.title;
+      
+      var thumbs = this.dom.imageThumbnails.querySelectorAll('.thumbnail-item');
+      for (var i = 0; i < thumbs.length; i++) {
+        thumbs[i].classList.remove('active');
+      }
+      if (thumbs[index]) thumbs[index].classList.add('active');
+      
+      this.currentStageIndex = 0;
+      this.currentStepIndex = 0;
+      this.updateDisplay();
+    };
+    
+    this.getCurrentStep = function() {
+      var stage = TEACHING_STEPS[this.currentStageIndex];
+      if (!stage) return null;
+      return stage.steps[this.currentStepIndex] || null;
+    };
+    
+    this.updateDisplay = function() {
+      var stage = TEACHING_STEPS[this.currentStageIndex];
+      var step = this.getCurrentStep();
+      if (!stage || !step) return;
+      
+      this.dom.stageTitle.textContent = stage.stageTitle;
+      this.dom.stepTitle.textContent = step.title;
+      this.dom.stepContent.textContent = step.content;
+      
+      for (var i = 0; i < this.dom.stageDots.length; i++) {
+        var dot = this.dom.stageDots[i];
+        dot.classList.remove('active', 'completed', 'pending');
+        if (i === this.currentStageIndex) {
+          dot.classList.add('active');
+        } else if (i < this.currentStageIndex) {
+          dot.classList.add('completed');
+          dot.innerHTML = '√';
+        } else {
+          dot.classList.add('pending');
+        }
+      }
+      
+      this.updateCursorPosition(step);
+      this.updateHighlightRing(step);
+      this.updateQuizSection(step);
+      this.updateProgress();
+      this.updateStepIndicator();
+      this.updateButtonStates();
+      this.updateQuizStats();
+      this.updateChallengeEntrance();
+      this.saveProgress();
+    };
+    
+    this.updateCursorPosition = function(step) {
+      var cursor = this.dom.cursorMarker;
+      if (!step || !cursor) return;
+      
+      cursor.style.left = step.cursorX + '%';
+      cursor.style.top = step.cursorY + '%';
+      
+      cursor.style.transform = 'translate(-50%, -50%) scale(1.25)';
+      setTimeout(function() {
+        cursor.style.transform = 'translate(-50%, -50%) scale(1)';
+      }, 300);
+    };
+    
+    this.updateHighlightRing = function(step) {
+      var container = this.dom.ringContainer;
+      container.innerHTML = '';
+      
+      if (!step.ring) return;
+      
+      var ring = document.createElement('div');
+      ring.className = 'highlight-ring';
+      
+      var size = step.ring.size;
+      ring.style.width = size + 'px';
+      ring.style.height = size + 'px';
+      ring.style.left = step.ring.x + '%';
+      ring.style.top = step.ring.y + '%';
+      ring.style.transform = 'translate(-50%, -50%)';
+      
+      container.appendChild(ring);
+      
+      setTimeout(function() {
+        ring.classList.add('active');
+      }, 10);
+    };
+    
+    this.updateQuizSection = function(step) {
+      var quizZone = this.dom.quizZone;
+      var quizOptions = this.dom.quizOptions;
+      var quizFeedback = this.dom.quizFeedback;
+      
+      if (!step.isQuiz) {
+        quizZone.style.display = 'none';
+        return;
+      }
+      
+      quizZone.style.display = 'block';
+      quizOptions.innerHTML = '';
+      quizFeedback.style.display = 'none';
+      
+      for (var i = 0; i < step.quizOptions.length; i++) {
+        (function(optionIndex) {
+          var btn = document.createElement('button');
+          btn.className = 'quiz-option-btn';
+          btn.textContent = step.quizOptions[optionIndex];
+          
+          btn.addEventListener('click', function() {
+            self.handleQuizAnswer(optionIndex, step);
+          });
+          
+          quizOptions.appendChild(btn);
+        })(i);
+      }
+    };
+    
+    this.handleQuizAnswer = function(selectedIndex, step) {
+      var quizFeedback = this.dom.quizFeedback;
+      var allBtns = this.dom.quizOptions.querySelectorAll('.quiz-option-btn');
+      
+      for (var i = 0; i < allBtns.length; i++) {
+        allBtns[i].disabled = true;
+      }
+      
+      this.quizResults.total++;
+      
+      if (selectedIndex === step.quizAnswer) {
+        this.quizResults.correct++;
+        quizFeedback.style.display = 'block';
+        quizFeedback.className = 'quiz-feedback correct';
+        quizFeedback.innerHTML = '回答正确！';
+        allBtns[selectedIndex].classList.add('correct');
+        
+        var _self = this;
+        setTimeout(function() {
+          _self.nextStep();
+        }, 1500);
+      } else {
+        this.quizResults.wrong++;
+        quizFeedback.style.display = 'block';
+        quizFeedback.className = 'quiz-feedback wrong';
+        quizFeedback.innerHTML = '再想想看';
+        
+        allBtns[selectedIndex].classList.add('wrong');
+        
+        var revealBtn = document.createElement('button');
+        revealBtn.className = 'quiz-reveal-btn';
+        revealBtn.textContent = '查看解析';
+        revealBtn.onclick = function() {
+          self.dom.answerReveal.style.display = 'block';
+          self.dom.answerReveal.innerHTML = '<strong>正确答案：</strong>' + step.quizOptions[step.quizAnswer];
+          self.dom.answerExplain.style.display = 'block';
+          self.dom.answerExplain.innerHTML = '<strong>解析：</strong>' + step.quizExplain;
+        };
+        quizFeedback.appendChild(revealBtn);
+        
+        allBtns[step.quizAnswer].classList.add('correct');
+        
+        for (var j = 0; j < allBtns.length; j++) {
+          if (j !== selectedIndex) {
+            allBtns[j].disabled = false;
+          }
+        }
+      }
+      
+      this.updateQuizStats();
+    };
+    
+    this.updateProgress = function() {
+      var totalSteps = 0;
+      for (var i = 0; i < TEACHING_STEPS.length; i++) {
+        totalSteps += TEACHING_STEPS[i].steps.length;
+      }
+      
+      var completedSteps = 0;
+      for (var i = 0; i < this.currentStageIndex; i++) {
+        completedSteps += TEACHING_STEPS[i].steps.length;
+      }
+      completedSteps += this.currentStepIndex;
+      
+      var percentage = Math.round((completedSteps / totalSteps) * 100);
+      this.dom.progressBar.style.width = percentage + '%';
+    };
+    
+    this.updateStepIndicator = function() {
+      var stage = TEACHING_STEPS[this.currentStageIndex];
+      var totalInStage = stage.steps.length;
+      this.dom.stepIndicator.textContent = '阶段 ' + (this.currentStageIndex + 1) + '/' + TEACHING_STEPS.length + ' | 步骤 ' + (this.currentStepIndex + 1) + '/' + totalInStage;
+    };
+    
+    this.updateButtonStates = function() {
+      var isFirstStep = (this.currentStageIndex === 0 && this.currentStepIndex === 0);
+      var isLastStep = this.isLastStep();
+      
+      this.dom.prevBtn.disabled = isFirstStep;
+      this.dom.nextBtn.disabled = isLastStep;
+    };
+    
+    this.isLastStep = function() {
+      var lastStage = TEACHING_STEPS[TEACHING_STEPS.length - 1];
+      return (this.currentStageIndex === TEACHING_STEPS.length - 1 && this.currentStepIndex === lastStage.steps.length - 1);
+    };
+    
+    this.updateQuizStats = function() {
+      var stats = this.dom.quizStats;
+      if (this.quizResults.total === 0) {
+        stats.textContent = '暂无闯关记录';
+      } else {
+        stats.textContent = '已闯关：' + this.quizResults.total + ' 题 | 正确：' + this.quizResults.correct + ' | 错误：' + this.quizResults.wrong;
+      }
+    };
+    
+    this.nextStep = function() {
+      if (this.isLastStep()) {
+        this.stopAutoPlay();
+        return;
+      }
+      
+      var currentStage = TEACHING_STEPS[this.currentStageIndex];
+      
+      if (this.currentStepIndex < currentStage.steps.length - 1) {
+        this.currentStepIndex++;
+      } else {
+        this.currentStageIndex++;
+        this.currentStepIndex = 0;
+      }
+      
+      this.updateDisplay();
+    };
+    
+    this.prevStep = function() {
+      if (this.currentStageIndex === 0 && this.currentStepIndex === 0) return;
+      
+      if (this.currentStepIndex > 0) {
+        this.currentStepIndex--;
+      } else {
+        this.currentStageIndex--;
+        this.currentStepIndex = TEACHING_STEPS[this.currentStageIndex].steps.length - 1;
+      }
+      
+      this.updateDisplay();
+    };
+    
+    this.toggleAutoPlay = function() {
+      if (this.isAutoPlaying) {
+        this.stopAutoPlay();
+      } else {
+        this.startAutoPlay();
+      }
+    };
+    
+    this.startAutoPlay = function() {
+      this.isAutoPlaying = true;
+      this.dom.playBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> 暂停';
+      this.dom.playBtn.classList.add('playing');
+      
+      if (this.isLastStep()) {
+        this.currentStageIndex = 0;
+        this.currentStepIndex = 0;
+        this.updateDisplay();
+      }
+      
+      var _self = this;
+      this.autoPlayTimer = setInterval(function() {
+        if (_self.isLastStep()) {
+          _self.stopAutoPlay();
+        } else {
+          _self.nextStep();
+        }
+      }, 3000);
+    };
+    
+    this.stopAutoPlay = function() {
+      this.isAutoPlaying = false;
+      if (this.autoPlayTimer) {
+        clearInterval(this.autoPlayTimer);
+        this.autoPlayTimer = null;
+      }
+      this.dom.playBtn.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18"><polygon points="8,4 20,12 8,20"/></svg> 自动播放';
+      this.dom.playBtn.classList.remove('playing');
+    };
+    
+    this.autoGuide = function() {
+      this.stopAutoPlay();
+      this.currentStageIndex = 0;
+      this.currentStepIndex = 0;
+      this.updateDisplay();
+      this.startAutoPlay();
+    };
+    
+    this.challengeQuestions = [];
+    
+    this.challengeState = {
+      currentIndex: 0,
+      total: 5,
+      correct: 0,
+      wrong: 0,
+      weakPoints: []
+    };
+    
+    this.initChallengeBank = function() {
+      this.challengeQuestions = [
+        {
+          question: "【闯关1】一个质量为5kg的物体，受到20N的水平拉力，根据牛顿第二定律F=ma，求物体的加速度。",
+          options: ["2 m/s²", "4 m/s²", "5 m/s²", "10 m/s²"],
+          answer: 1,
+          explain: "由F=ma得 a=F/m=20N/5kg=4m/s²",
+          weakPoint: "牛顿第二定律公式应用"
+        },
+        {
+          question: "【闯关2】质量为2kg的物体，受到6N的水平拉力，同时受到2N的摩擦力（方向相反），求加速度。",
+          options: ["1 m/s²", "2 m/s²", "3 m/s²", "4 m/s²"],
+          answer: 1,
+          explain: "F合=F-f=6-2=4N，a=F合/m=4N/2kg=2m/s²",
+          weakPoint: "摩擦力方向判断"
+        },
+        {
+          question: "【闯关3】关于牛顿第二定律的方向，以下说法正确的是？",
+          options: ["加速度方向与速度方向相同", "加速度方向与合外力方向相同", "加速度方向与拉力方向相反", "加速度方向与质量成正比"],
+          answer: 1,
+          explain: "牛顿第二定律：加速度方向与合外力方向相同",
+          weakPoint: "加速度方向理解"
+        },
+        {
+          question: "【闯关4】质量为3kg的物体，受到F₁=8N向右，F₂=5N向左的力，求加速度。",
+          options: ["5/3 m/s² 向右", "5/3 m/s² 向左", "13/3 m/s² 向右", "13/3 m/s² 向左"],
+          answer: 0,
+          explain: "F合=8-5=3N向右，a=3N/3kg=1m/s²向右=5/3m/s²向右",
+          weakPoint: "多力合成与方向"
+        },
+        {
+          question: "【闯关5】关于质量和重力的关系，以下说法错误的是？",
+          options: ["质量是物体本身的属性", "重力与质量成正比G=mg", "质量单位是kg，重力单位也是kg", "在月球上质量不变，重力变小"],
+          answer: 2,
+          explain: "质量单位是kg，重力单位是N，不能混淆",
+          weakPoint: "质量与重力区别"
+        }
+      ];
+      
+      this.challengeState.total = this.challengeQuestions.length;
+    };
+    
+    this.loadProgress = function() {
+      try {
+        var saved = localStorage.getItem('ai_learning_progress');
+        if (saved) {
+          var data = JSON.parse(saved);
+          this.currentStageIndex = data.stageIndex || 0;
+          this.currentStepIndex = data.stepIndex || 0;
+          this.quizResults = data.quizResults || { total: 0, correct: 0, wrong: 0 };
+        }
+      } catch (e) {
+        console.log('无法恢复学习进度');
+      }
+    };
+    
+    this.saveProgress = function() {
+      try {
+        var data = {
+          stageIndex: this.currentStageIndex,
+          stepIndex: this.currentStepIndex,
+          quizResults: this.quizResults
+        };
+        localStorage.setItem('ai_learning_progress', JSON.stringify(data));
+      } catch (e) {
+        console.log('无法保存学习进度');
+      }
+    };
+    
+    this.showChallengeEntrance = function() {
+      this.dom.challengeEntrance.style.display = 'block';
+    };
+    
+    this.hideChallengeEntrance = function() {
+      this.dom.challengeEntrance.style.display = 'none';
+    };
+    
+    this.startChallenge = function() {
+      this.hideChallengeEntrance();
+      this.dom.challengeMode.style.display = 'block';
+      
+      this.challengeState.currentIndex = 0;
+      this.challengeState.correct = 0;
+      this.challengeState.wrong = 0;
+      this.challengeState.weakPoints = [];
+      
+      this.showChallengeQuestion();
+    };
+    
+    this.showChallengeQuestion = function() {
+      var q = this.challengeQuestions[this.challengeState.currentIndex];
+      
+      this.dom.challengeProgress.textContent = (this.challengeState.currentIndex + 1) + '/' + this.challengeState.total;
+      this.dom.challengeQuestion.textContent = q.question;
+      this.dom.challengeOptions.innerHTML = '';
+      this.dom.challengeFeedback.style.display = 'none';
+      this.dom.challengeResult.style.display = 'none';
+      
+      var _self = this;
+      for (var i = 0; i < q.options.length; i++) {
+        (function(optionIndex) {
+          var btn = document.createElement('button');
+          btn.className = 'challenge-option-btn';
+          btn.textContent = q.options[optionIndex];
+          btn.addEventListener('click', function() {
+            _self.handleChallengeAnswer(optionIndex);
+          });
+          _self.dom.challengeOptions.appendChild(btn);
+        })(i);
+      }
+    };
+    
+    this.handleChallengeAnswer = function(selectedIndex) {
+      var q = this.challengeQuestions[this.challengeState.currentIndex];
+      var allBtns = this.dom.challengeOptions.querySelectorAll('.challenge-option-btn');
+      
+      for (var i = 0; i < allBtns.length; i++) {
+        allBtns[i].disabled = true;
+      }
+      
+      if (selectedIndex === q.answer) {
+        this.challengeState.correct++;
+        this.dom.challengeFeedback.style.display = 'block';
+        this.dom.challengeFeedback.className = 'challenge-feedback correct';
+        this.dom.challengeFeedback.innerHTML = '<strong>回答正确！</strong><br>' + q.explain;
+        allBtns[selectedIndex].classList.add('correct');
+        
+        var _self = this;
+        setTimeout(function() {
+          _self.nextChallenge();
+        }, 2000);
+      } else {
+        this.challengeState.wrong++;
+        this.challengeState.weakPoints.push(q.weakPoint);
+        
+        this.dom.challengeFeedback.style.display = 'block';
+        this.dom.challengeFeedback.className = 'challenge-feedback wrong';
+        this.dom.challengeFeedback.innerHTML = '<strong>回答错误</strong><br>' + q.explain;
+        allBtns[selectedIndex].classList.add('wrong');
+        allBtns[q.answer].classList.add('correct');
+        
+        var _self = this;
+        setTimeout(function() {
+          _self.nextChallenge();
+        }, 2500);
+      }
+    };
+    
+    this.nextChallenge = function() {
+      this.challengeState.currentIndex++;
+      
+      if (this.challengeState.currentIndex >= this.challengeState.total) {
+        this.showChallengeResult();
+      } else {
+        this.showChallengeQuestion();
+      }
+    };
+    
+    this.showChallengeResult = function() {
+      this.dom.challengeMode.style.display = 'none';
+      this.dom.challengeResult.style.display = 'block';
+      
+      var accuracy = Math.round((this.challengeState.correct / this.challengeState.total) * 100);
+      
+      this.dom.finalAccuracy.textContent = accuracy + '%';
+      this.dom.finalCorrect.textContent = this.challengeState.correct;
+      this.dom.finalWrong.textContent = this.challengeState.wrong;
+      
+      if (this.challengeState.weakPoints.length > 0) {
+        this.dom.weakPoints.style.display = 'block';
+        this.dom.weakPointsList.innerHTML = '';
+        for (var i = 0; i < this.challengeState.weakPoints.length; i++) {
+          var li = document.createElement('li');
+          li.textContent = this.challengeState.weakPoints[i];
+          this.dom.weakPointsList.appendChild(li);
+        }
+      } else {
+        this.dom.weakPoints.style.display = 'none';
+      }
+      
+      var feedbackEl = this.dom.resultFeedback;
+      if (accuracy >= 90) {
+        feedbackEl.className = 'result-feedback excellent';
+        feedbackEl.textContent = '太棒了！正确率超过90%，您已经掌握了牛顿第二定律的核心知识！';
+      } else if (accuracy >= 70) {
+        feedbackEl.className = 'result-feedback good';
+        feedbackEl.textContent = '不错！正确率超过70%，继续加油！';
+      } else if (accuracy >= 50) {
+        feedbackEl.className = 'result-feedback needs-review';
+        feedbackEl.textContent = '还需努力！建议回顾一下薄弱的知识点，再试一次！';
+      } else {
+        feedbackEl.className = 'result-feedback needs-review';
+        feedbackEl.textContent = '建议重新学习讲解内容，理解基本概念后再来挑战！';
+      }
+      
+      this.quizResults.total += this.challengeState.total;
+      this.quizResults.correct += this.challengeState.correct;
+      this.quizResults.wrong += this.challengeState.wrong;
+      this.updateQuizStats();
+      
+      this.saveProgress();
+    };
+    
+    this.retryChallenge = function() {
+      this.dom.challengeResult.style.display = 'none';
+      this.startChallenge();
+    };
+    
+    this.backToLearning = function() {
+      this.dom.challengeResult.style.display = 'none';
+      this.dom.challengeMode.style.display = 'none';
+      this.showChallengeEntrance();
+    };
+    
+    this.bindChallengeEvents = function() {
+      var _self = this;
+      
+      if (this.dom.startChallengeBtn) {
+        this.dom.startChallengeBtn.addEventListener('click', function() {
+          _self.startChallenge();
+        });
+      }
+      
+      if (this.dom.retryChallengeBtn) {
+        this.dom.retryChallengeBtn.addEventListener('click', function() {
+          _self.retryChallenge();
+        });
+      }
+      
+      if (this.dom.backToLearningBtn) {
+        this.dom.backToLearningBtn.addEventListener('click', function() {
+          _self.backToLearning();
+        });
+      }
+    };
+    
+    this.updateChallengeEntrance = function() {
+      var isLastStepOfSummary = (
+        this.currentStageIndex === TEACHING_STEPS.length - 1 &&
+        this.currentStepIndex === TEACHING_STEPS[TEACHING_STEPS.length - 1].steps.length - 1
+      );
+      
+      if (isLastStepOfSummary) {
+        this.showChallengeEntrance();
+      } else {
+        this.hideChallengeEntrance();
+      }
+    };
+    
+    this.bindEvents = function() {
+      var _self = this;
+      
+      this.dom.prevBtn.addEventListener('click', function() { 
+        _self.stopAutoPlay();
+        _self.prevStep(); 
+      });
+      
+      this.dom.nextBtn.addEventListener('click', function() { 
+        _self.stopAutoPlay();
+        _self.nextStep(); 
+      });
+      
+      this.dom.playBtn.addEventListener('click', function() { 
+        _self.toggleAutoPlay(); 
+      });
+      
+      this.dom.autoGuideBtn.addEventListener('click', function() { 
+        _self.autoGuide(); 
+      });
+      
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          _self.stopAutoPlay();
+          _self.nextStep();
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          _self.stopAutoPlay();
+          _self.prevStep();
+        } else if (e.key === ' ') {
+          e.preventDefault();
+          _self.toggleAutoPlay();
+        }
+      });
+      
+      for (var i = 0; i < this.dom.stageDots.length; i++) {
+        (function(index) {
+          _self.dom.stageDots[index].addEventListener('click', function() {
+            _self.stopAutoPlay();
+            _self.currentStageIndex = index;
+            _self.currentStepIndex = 0;
+            _self.updateDisplay();
+          });
+        })(i);
+      }
+    };
+  };
+
+  document.addEventListener('DOMContentLoaded', function() {
+    var engine = new TeachingEngine();
+    engine.init();
+    window.teachingEngine = engine;
+    
+    var questionInput = document.getElementById('questionInput');
+    var analyzeBtn = document.getElementById('analyzeBtn');
+    var qaCloseBtn = document.getElementById('qaCloseBtn');
+    var addToQuestionBankBtn = document.getElementById('addToQuestionBankBtn');
+    var qaRetryBtn = document.getElementById('qaRetryBtn');
+    
+    if (questionInput && analyzeBtn) {
+      analyzeBtn.addEventListener('click', function() {
+        var questionText = questionInput.value.trim();
+        if (questionText) {
+          engine.handleQuestion(questionText);
+        } else {
+          alert('请输入您想学习的问题');
+        }
+      });
+      
+      questionInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          var questionText = questionInput.value.trim();
+          if (questionText) {
+            engine.handleQuestion(questionText);
+          }
+        }
+      });
+    }
+    
+    if (qaCloseBtn) {
+      qaCloseBtn.addEventListener('click', function() {
+        document.getElementById('qaResultArea').style.display = 'none';
+      });
+    }
+    
+    if (addToQuestionBankBtn) {
+      addToQuestionBankBtn.addEventListener('click', function() {
+        engine.addCurrentQuestionToBank();
+      });
+    }
+    
+    if (qaRetryBtn) {
+      qaRetryBtn.addEventListener('click', function() {
+        var questionText = questionInput.value.trim();
+        if (questionText) {
+          engine.handleQuestion(questionText);
+        }
+      });
+    }
+  });
+  </script>
+</body>
+</html>

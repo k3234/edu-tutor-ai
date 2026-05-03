@@ -1,0 +1,127 @@
+{
+  "config_name": "教学演示系统配置模板",
+  "version": "1.0",
+  "description": "与study_teaching_engine.js配套的JSON配置模板，支持marking_points扩展字段，实现题目与动态讲解的自动匹配",
+  "note": "此JSON可直接用于扩展AI助学系统的题目数据结构，新增marking_points字段后，引擎可自动生成动态讲解课件",
+
+  "marking_extension_example": {
+    "id": 1,
+    "grade": "高一",
+    "subject": "数学",
+    "knowledge_module": "二次函数·最值问题",
+    "original_question": "求函数 $f(x) = x^2 - 4x + 3$ 的最小值",
+    "answer": "-1",
+    "analysis": "使用顶点公式求解：x = -b/(2a) = 2，代入得 f(2) = -1",
+    "core_principle": "二次函数 $f(x)=ax^2+bx+c$ 中，当 $a>0$ 时在 $x=-b/(2a)$ 处取得最小值",
+    "common_errors": [
+      "忘记检验a的符号（开口方向）",
+      "顶点公式記错为 b/(2a)"
+    ],
+    "mnemonic": "二次函数求最值，顶点公式要记住",
+
+    "teaching_image": "https://picsum.photos/seed/math1/800/500",
+
+    "marking_points": [
+      {
+        "id": "mark1",
+        "text": "顶点坐标：对称轴与抛物线的交点",
+        "x_percent": 50,
+        "y_percent": 15,
+        "ring_size": 48
+      },
+      {
+        "id": "mark2",
+        "text": "对称轴：x = -b/(2a) = 2",
+        "x_percent": 50,
+        "y_percent": 85,
+        "ring_size": 50
+      },
+      {
+        "id": "mark3",
+        "text": "与y轴交点：令x=0，y=c=3",
+        "x_percent": 15,
+        "y_percent": 60,
+        "ring_size": 42
+      }
+    ],
+
+    "teaching_steps": {
+      "stage1_parse": [
+        {
+          "title": "题目展示",
+          "content": "让我们来看这道二次函数题...",
+          "cursor_target": { "x": 40, "y": 50 },
+          "ring": null
+        }
+      ],
+      "stage2_principle": [
+        {
+          "title": "核心概念",
+          "content": "二次函数的图像是抛物线...",
+          "cursor_target": { "x": 50, "y": 15 },
+          "ring": { "target": "mark1" }
+        }
+      ],
+      "stage3_test": [
+        {
+          "title": "变式训练",
+          "content": "求 f(x) = -x² + 6x - 5 的最大值",
+          "cursor_target": { "x": 50, "y": 40 },
+          "isQuiz": true,
+          "quizOptions": ["A. 2", "B. 4", "C. 5", "D. 6"],
+          "quizAnswer": 1,
+          "quizExplain": "a=-1<0，开口向下，x=3 时取得最大值"
+        }
+      ],
+      "stage4_summary": [
+        {
+          "title": "知识归档",
+          "content": "二次函数最值问题核心要点...",
+          "cursor_target": { "x": 20, "y": 35 },
+          "ring": { "target": "mark3" }
+        }
+      ]
+    }
+  },
+
+  "full_subject_examples": {
+    "备注": "以下为各学科marking_points配置示例，展示如何将题库JSON与动态讲解引擎对接",
+
+    "物理_力学": {
+      "teaching_image": "https://picsum.photos/seed/physics2/800/500",
+      "marking_points": [
+        { "id": "m1", "text": "重力 mg，竖直向下", "x_percent": 40, "y_percent": 35, "ring_size": 46 },
+        { "id": "m2", "text": "支持力 N，垂直斜面向上", "x_percent": 50, "y_percent": 70, "ring_size": 46 },
+        { "id": "m3", "text": "摩擦力 f=μN，沿斜面向下", "x_percent": 70, "y_percent": 50, "ring_size": 46 }
+      ]
+    },
+
+    "化学_方程式": {
+      "teaching_image": "https://picsum.photos/seed/chem3/800/500",
+      "marking_points": [
+        { "id": "m1", "text": "反应物总质量", "x_percent": 25, "y_percent": 50, "ring_size": 44 },
+        { "id": "m2", "text": "生成物总质量", "x_percent": 75, "y_percent": 50, "ring_size": 44 },
+        { "id": "m3", "text": "质量守恒：m_反应 = m_生成", "x_percent": 50, "y_percent": 25, "ring_size": 48 }
+      ]
+    },
+
+    "编程_Python数据结构": {
+      "teaching_image": "https://picsum.photos/seed/python5/800/500",
+      "marking_points": [
+        { "id": "m1", "text": "列表: [1,2,3] 有序可变", "x_percent": 30, "y_percent": 30, "ring_size": 52 },
+        { "id": "m2", "text": "元组: (1,2,3) 有序不可变", "x_percent": 65, "y_percent": 30, "ring_size": 52 },
+        { "id": "m3", "text": "字典: {a:1} 键值对映射", "x_percent": 30, "y_percent": 75, "ring_size": 52 },
+        { "id": "m4", "text": "集合: {1,2,3} 无序唯一", "x_percent": 65, "y_percent": 75, "ring_size": 52 }
+      ]
+    },
+
+    "编程_LLM训练流程": {
+      "teaching_image": "https://picsum.photos/seed/llm6/800/500",
+      "marking_points": [
+        { "id": "m1", "text": "预训练基座模型 W0（冻结）", "x_percent": 20, "y_percent": 40, "ring_size": 50 },
+        { "id": "m2", "text": "LoRA低秩矩阵 BA（可训练）", "x_percent": 50, "y_percent": 70, "ring_size": 50 },
+        { "id": "m3", "text": "微调后 W=W0+BA（合并）", "x_percent": 80, "y_percent": 40, "ring_size": 50 }
+      ]
+    }
+  }
+}
