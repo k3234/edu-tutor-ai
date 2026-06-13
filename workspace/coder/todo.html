@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>待办清单 — LMM教学项目</title>
+  <style>
+    /* ========================================
+       CSS 变量 — 深色主题配色系统
+       ======================================== */
+    :root {
+      --bg-primary: #1a1a2e;
+      --bg-secondary: #16213e;
+      --bg-card: #0f3460;
+      --text-primary: #eaeaea;
+      --text-secondary: #a0a0b0;
+      --text-muted: #6c6c80;
+      --accent: #e94560;
+      --accent-hover: #ff6b81;
+      --success: #22c55e;
+      --border: #2a2a4a;
+      --shadow: rgba(0, 0, 0, 0.3);
+      --radius: 8px;
+      --transition: 0.2s ease;
+    }
+
+    /* ========================================
+       全局重置
+       ======================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Microsoft YaHei", sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 16px;
+      line-height: 1.6;
+    }
+
+    /* ========================================
+       主容器 — 居中卡片布局
+       ======================================== */
+    .app-container {
+      width: 100%;
+      max-width: 520px;
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      padding: 32px 24px;
+      box-shadow: 0 8px 32px var(--shadow);
+    }
+
+    /* ---- 标题区域 ---- */
+    .app-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .app-header h1 {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 2px;
+    }
+
+    .app-header .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ========================================
+       添加任务区域 — 输入框 + 按钮
+       JS钩子: #todo-form, #todo-input, #todo-submit
+       ======================================== */
+    .add-task-area {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    #todo-form {
+      display: flex;
+      gap: 10px;
+      width: 100%;
+    }
+
+    #todo-input {
+      flex: 1;
+      padding: 12px 16px;
+      font-size: 15px;
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text-primary);
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    #todo-input:focus {
+      border-color: var(--accent);
+    }
+
+    #todo-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    #todo-submit {
+      padding: 12px 20px;
+      font-size: 15px;
+      font-weight: 600;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      transition: background var(--transition);
+      white-space: nowrap;
+    }
+
+    #todo-submit:hover {
+      background: var(--accent-hover);
+    }
+
+    /* ========================================
+       筛选标签 — 全部 / 进行中 / 已完成
+       JS钩子: .filter-tabs, .filter-tab, .filter-tab.active
+       ======================================== */
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .filter-tab {
+      flex: 1;
+      text-align: center;
+      padding: 8px 0;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-muted);
+      background: none;
+      border: none;
+      cursor: pointer;
+      border-radius: var(--radius);
+      transition: all var(--transition);
+      position: relative;
+    }
+
+    .filter-tab:hover {
+      color: var(--text-primary);
+      background: var(--bg-card);
+    }
+
+    /* JS 动态添加此 class 表示当前选中 */
+    .filter-tab.active {
+      color: var(--accent);
+      font-weight: 700;
+    }
+
+    .filter-tab.active::after {
+      content: "";
+      position: absolute;
+      bottom: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 24px;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+    }
+
+    /* ========================================
+       任务列表
+       JS钩子: #todo-list, .todo-item, .todo-item.completed
+       ======================================== */
+    #todo-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 20px;
+      min-height: 60px;
+    }
+
+    /* 空状态提示 */
+    .empty-state {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 14px;
+      padding: 32px 0;
+    }
+
+    /* 单条任务 */
+    .todo-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      background: var(--bg-card);
+      border-radius: var(--radius);
+      transition: all var(--transition);
+      border: 1px solid transparent;
+    }
+
+    .todo-item:hover {
+      border-color: var(--border);
+    }
+
+    /* ---- 完成状态圆圈 ---- */
+    .todo-checkbox {
+      width: 22px;
+      height: 22px;
+      border: 2px solid var(--text-muted);
+      border-radius: 50%;
+      flex-shrink: 0;
+      cursor: pointer;
+      transition: all var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .todo-checkbox:hover {
+      border-color: var(--success);
+    }
+
+    /* JS 动态添加: 已完成样式 */
+    .todo-item.completed .todo-checkbox {
+      background: var(--success);
+      border-color: var(--success);
+    }
+
+    .todo-item.completed .todo-checkbox::after {
+      content: "✓";
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    /* ---- 任务文本 ---- */
+    .todo-text {
+      flex: 1;
+      font-size: 15px;
+      cursor: pointer;
+      transition: color var(--transition);
+      word-break: break-word;
+    }
+
+    /* JS 动态添加: 完成划线 */
+    .todo-item.completed .todo-text {
+      color: var(--text-muted);
+      text-decoration: line-through;
+    }
+
+    /* ---- 删除按钮 ---- */
+    .todo-delete {
+      width: 32px;
+      height: 32px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 50%;
+      transition: all var(--transition);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .todo-delete:hover {
+      color: var(--accent);
+      background: rgba(233, 69, 96, 0.1);
+    }
+
+    /* ========================================
+       底部信息栏 — 任务计数 + 清除按钮
+       JS钩子: #task-count, #clear-completed
+       ======================================== */
+    .app-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    #task-count {
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    #task-count strong {
+      color: var(--accent);
+    }
+
+    #clear-completed {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 13px;
+      transition: color var(--transition);
+    }
+
+    #clear-completed:hover {
+      color: var(--accent);
+    }
+
+    /* ========================================
+       响应式 — 移动端适配
+       ======================================== */
+    @media (max-width: 480px) {
+      body {
+        padding: 16px 8px;
+      }
+
+      .app-container {
+        padding: 24px 16px;
+        border-radius: 12px;
+      }
+
+      .app-header h1 {
+        font-size: 24px;
+      }
+
+      .add-task-area {
+        flex-direction: column;
+      }
+
+      #todo-form {
+        flex-direction: column;
+      }
+
+      #todo-submit {
+        width: 100%;
+      }
+
+      .todo-item {
+        padding: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========================================
+       主容器
+       ======================================== -->
+  <main class="app-container">
+
+    <!-- 标题 -->
+    <header class="app-header">
+      <h1>待办清单</h1>
+      <p class="subtitle">LMM 教学项目 · Coder 出品</p>
+    </header>
+
+    <!-- ========================================
+         添加任务表单
+         JS: 监听 submit → 获取 #todo-input.value → 创建 .todo-item
+         ======================================== -->
+    <div class="add-task-area">
+      <form id="todo-form" autocomplete="off">
+        <input
+          type="text"
+          id="todo-input"
+          placeholder="输入新的待办事项…"
+          maxlength="100"
+          aria-label="新增待办事项"
+        >
+        <button type="submit" id="todo-submit">添加</button>
+      </form>
+    </div>
+
+    <!-- ========================================
+         筛选标签
+         JS: 点击切换 .active → 过滤 #todo-list 显示
+         ======================================== -->
+    <nav class="filter-tabs" aria-label="任务筛选">
+      <button class="filter-tab active" data-filter="all">全部</button>
+      <button class="filter-tab" data-filter="active">进行中</button>
+      <button class="filter-tab" data-filter="completed">已完成</button>
+    </nav>
+
+    <!-- ========================================
+         任务列表容器
+         JS: 动态渲染 .todo-item
+         ======================================== -->
+    <ul id="todo-list" aria-label="待办任务列表">
+      <!-- JS 动态插入:
+      <li class="todo-item" data-id="唯一ID">
+        <span class="todo-checkbox" role="checkbox"></span>
+        <span class="todo-text">任务内容</span>
+        <button class="todo-delete" aria-label="删除">×</button>
+      </li>
+      -->
+      <li class="empty-state">暂无任务，添加一个吧 ✨</li>
+    </ul>
+
+    <!-- ========================================
+         底部信息栏
+         JS: 更新 #task-count 的数字，监听 #clear-completed 点击
+         ======================================== -->
+    <footer class="app-footer">
+      <span id="task-count">
+        剩余 <strong>0</strong> 项未完成
+      </span>
+      <button id="clear-completed">清除已完成</button>
+    </footer>
+
+  </main>
+
+  <!-- ========================================
+       JavaScript — 全部交互逻辑
+       ======================================== -->
+  <script>
+    (function () {
+      /* ==========================================
+         1. DOM 元素引用
+         ========================================== */
+      const form = document.getElementById("todo-form");
+      const input = document.getElementById("todo-input");
+      const list = document.getElementById("todo-list");
+      const countEl = document.getElementById("task-count").querySelector("strong");
+      const clearBtn = document.getElementById("clear-completed");
+      const filterTabs = document.querySelectorAll(".filter-tab");
+
+      /* ==========================================
+         2. 数据模型
+         tasks 是一个数组，每项结构: { id: string, text: string, completed: boolean }
+         ========================================== */
+      let tasks = [];
+      let currentFilter = "all"; // 当前筛选: all / active / completed
+
+      /* ==========================================
+         3. 生成唯一 ID（时间戳 + 随机数）
+         ========================================== */
+      function generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+      }
+
+      /* ==========================================
+         4. localStorage 操作
+         ========================================== */
+      const STORAGE_KEY = "lmm-todo-tasks";
+
+      /** 从 localStorage 加载任务数据 */
+      function loadTasks() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            tasks = JSON.parse(raw);
+          }
+        } catch (e) {
+          // 数据损坏时重置
+          tasks = [];
+        }
+      }
+
+      /** 将任务数据保存到 localStorage */
+      function saveTasks() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      }
+
+      /* ==========================================
+         5. 渲染函数 — 根据 tasks 和 currentFilter 绘制列表
+         ========================================== */
+      function render() {
+        // 5.1 筛选任务
+        let filtered = tasks;
+        if (currentFilter === "active") {
+          filtered = tasks.filter(function (t) { return !t.completed; });
+        } else if (currentFilter === "completed") {
+          filtered = tasks.filter(function (t) { return t.completed; });
+        }
+
+        // 5.2 清空列表
+        list.innerHTML = "";
+
+        // 5.3 空状态
+        if (filtered.length === 0) {
+          list.innerHTML = '<li class="empty-state">暂无任务，添加一个吧 ✨</li>';
+        } else {
+          // 5.4 逐条渲染
+          filtered.forEach(function (task) {
+            var li = document.createElement("li");
+            li.className = "todo-item";
+            if (task.completed) {
+              li.classList.add("completed");
+            }
+            li.setAttribute("data-id", task.id);
+            li.innerHTML =
+              '<span class="todo-checkbox" role="checkbox" aria-checked="' + task.completed + '"></span>' +
+              '<span class="todo-text">' + escapeHTML(task.text) + '</span>' +
+              '<button class="todo-delete" aria-label="删除">×</button>';
+            list.appendChild(li);
+          });
+        }
+
+        // 5.5 更新任务计数
+        updateCount();
+
+        // 5.6 更新筛选标签 active 状态
+        filterTabs.forEach(function (tab) {
+          var filter = tab.getAttribute("data-filter");
+          if (filter === currentFilter) {
+            tab.classList.add("active");
+          } else {
+            tab.classList.remove("active");
+          }
+        });
+      }
+
+      /** HTML 转义，防止 XSS */
+      function escapeHTML(str) {
+        var div = document.createElement("div");
+        div.textContent = str;
+        return div.innerHTML;
+      }
+
+      /* ==========================================
+         6. 更新底部任务计数
+         ========================================== */
+      function updateCount() {
+        var activeCount = tasks.filter(function (t) { return !t.completed; }).length;
+        countEl.textContent = activeCount;
+      }
+
+      /* ==========================================
+         7. 添加任务
+         ========================================== */
+      function addTask(text) {
+        var trimmed = text.trim();
+        if (!trimmed) return; // 空内容不添加
+
+        tasks.push({
+          id: generateId(),
+          text: trimmed,
+          completed: false
+        });
+
+        saveTasks(); // 持久化
+        render();    // 刷新界面
+        input.value = ""; // 清空输入框
+        input.focus();    // 保持焦点
+      }
+
+      /* ==========================================
+         8. 删除任务（根据 data-id）
+         ========================================== */
+      function deleteTask(id) {
+        tasks = tasks.filter(function (t) { return t.id !== id; });
+        saveTasks();
+        render();
+      }
+
+      /* ==========================================
+         9. 切换完成状态（根据 data-id）
+         ========================================== */
+      function toggleTask(id) {
+        var task = tasks.find(function (t) { return t.id === id; });
+        if (task) {
+          task.completed = !task.completed;
+          saveTasks();
+          render();
+        }
+      }
+
+      /* ==========================================
+         10. 设置筛选条件并重新渲染
+         ========================================== */
+      function setFilter(filter) {
+        currentFilter = filter;
+        render();
+      }
+
+      /* ==========================================
+         11. 清除所有已完成任务
+         ========================================== */
+      function clearCompleted() {
+        tasks = tasks.filter(function (t) { return !t.completed; });
+        saveTasks();
+        render();
+      }
+
+      /* ==========================================
+         12. 事件监听
+         ========================================== */
+
+      // 12.1 表单提交 — 添加任务
+      form.addEventListener("submit", function (e) {
+        e.preventDefault(); // 阻止页面刷新
+        addTask(input.value);
+      });
+
+      // 12.2 列表事件委托 — 点击复选框/文本切换完成，点击删除按钮删除
+      list.addEventListener("click", function (e) {
+        var target = e.target;
+        var li = target.closest(".todo-item");
+        if (!li) return; // 点到了空白区域
+
+        var id = li.getAttribute("data-id");
+
+        // 点击删除按钮
+        if (target.classList.contains("todo-delete")) {
+          deleteTask(id);
+          return;
+        }
+
+        // 点击复选框或文本 → 切换完成状态
+        if (target.classList.contains("todo-checkbox") || target.classList.contains("todo-text")) {
+          toggleTask(id);
+        }
+      });
+
+      // 12.3 筛选标签点击
+      filterTabs.forEach(function (tab) {
+        tab.addEventListener("click", function () {
+          var filter = tab.getAttribute("data-filter");
+          setFilter(filter);
+        });
+      });
+
+      // 12.4 清除已完成按钮
+      clearBtn.addEventListener("click", function () {
+        clearCompleted();
+      });
+
+      /* ==========================================
+         13. 初始化 — 加载数据并渲染
+         ========================================== */
+      loadTasks();
+      render();
+      input.focus();
+
+    })();
+  </script>
+
+</body>
+</html>

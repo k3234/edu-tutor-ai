@@ -1,0 +1,32 @@
+# LMM-Tiny Mini测试配置
+# 极轻量配置用于快速验证代码链路
+
+model:
+  vocab_size: 945   # 匹配实际分词器词表
+  n_layer: 2         # 仅2层，极速验证
+  n_head: 4          # 4个注意力头
+  n_embd: 128        # 小维度
+  ffn_dim: 512       # 4x n_embd
+  max_seq_len: 256   # 短序列
+  dropout: 0.1
+  bias: true
+  tie_weights: true
+
+training:
+  batch_size: 4
+  gradient_accumulation_steps: 1
+  learning_rate: 3.0e-4
+  weight_decay: 0.1
+  min_lr_ratio: 0.1
+  max_steps: 50       # 仅50步验证
+  warmup_steps: 5
+  val_interval: 10
+  checkpoint_interval: 25
+  use_amp: false      # CPU友好
+  seed: 42
+  exp_dir: "experiments/exp_test_mini"
+
+data:
+  token_file: "data/tokens.pt"
+  train_ratio: 0.95
+  num_workers: 0

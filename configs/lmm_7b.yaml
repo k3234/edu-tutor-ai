@@ -1,0 +1,46 @@
+# LMM-3B 配置（~3B，适合 16GB+ VRAM 或云训练）
+
+model:
+  vocab_size: 50000
+  n_layer: 32
+  n_head: 32
+  n_embd: 2560
+  ffn_dim: 10240
+  max_seq_len: 2048
+  dropout: 0.1
+
+training:
+  batch_size: 4
+  gradient_accumulation_steps: 16
+  learning_rate: 2.0e-4
+  weight_decay: 0.1
+  max_steps: 50000
+  warmup_steps: 2000
+  val_interval: 1000
+  checkpoint_interval: 5000
+  use_amp: true
+  seed: 42
+  exp_dir: "experiments/exp_3b_v1"
+
+data:
+  token_file: "data/raw/edu_corpus.txt"
+  train_ratio: 0.95
+
+teacher:
+  ollama_model: "qwen2.5:14b-instruct"
+  dpo_judge: "qwen2.5:14b-instruct"
+  temperature: 0.7
+  max_tokens: 2000
+
+sft:
+  data_file: "data/sft/train.jsonl"
+  steps: 10000
+  batch_size: 4
+  lr: 2e-4
+
+dpo:
+  data_file: "data/dpo/raw.jsonl"
+  steps: 1000
+  batch_size: 4
+  lr: 5e-6
+  beta: 0.1

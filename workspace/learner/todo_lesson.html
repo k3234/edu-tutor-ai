@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>待办清单 — 零基础教学讲解 | LMM Learner</title>
+<style>
+  /* ========================================
+     LMM 教学页面配色（浅色主题）
+     ======================================== */
+  :root {
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --text: #0f172a;
+    --muted: #64748b;
+    --primary: #3b82f6;
+    --accent: #e94560;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --border: #e2e8f0;
+    --code-bg: #1e293b;
+    --code-text: #e2e8f0;
+    --tag-html: #e94560;
+    --tag-css: #3b82f6;
+    --tag-js: #f59e0b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                 "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.8;
+  }
+
+  /* ---- 顶部导航 ---- */
+  .top-nav {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .top-nav .logo {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+
+  .top-nav .badge {
+    font-size: 11px;
+    background: var(--accent);
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+
+  .top-nav a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    margin-left: auto;
+  }
+
+  .top-nav a:hover { color: var(--primary); }
+
+  /* ---- 主体 ---- */
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+  }
+
+  /* ---- 标题区 ---- */
+  .hero {
+    text-align: center;
+    padding: 48px 24px;
+    margin-bottom: 32px;
+  }
+
+  .hero h1 {
+    font-size: 36px;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+
+  .hero p {
+    color: var(--muted);
+    font-size: 16px;
+  }
+
+  /* ---- 知识章节 ---- */
+  .chapter {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+  }
+
+  .chapter h2 {
+    font-size: 22px;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .chapter .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .chapter h3 {
+    font-size: 16px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-bottom: 16px;
+  }
+
+  .chapter p {
+    margin-bottom: 12px;
+    color: #334155;
+  }
+
+  /* ---- 代码块 ---- */
+  pre {
+    background: var(--code-bg);
+    color: var(--code-text);
+    padding: 18px 20px;
+    border-radius: 10px;
+    overflow-x: auto;
+    font-size: 13px;
+    line-height: 1.7;
+    margin: 14px 0;
+    font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+  }
+
+  pre .kw  { color: #c792ea; }  /* 关键字 */
+  pre .fn  { color: #82aaff; }  /* 函数名 */
+  pre .str { color: #c3e88d; }  /* 字符串 */
+  pre .cm  { color: #546e7a; font-style: italic; }  /* 注释 */
+  pre .prop{ color: #ffcb6b; }  /* 属性 */
+  pre .sel { color: #f78c6c; }  /* 选择器 */
+  pre .vl  { color: #f78c6c; }  /* 值 */
+
+  /* ---- 提示框 ---- */
+  .tip {
+    background: #eff6ff;
+    border-left: 4px solid var(--primary);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 14px 0;
+    font-size: 14px;
+    color: #1e40af;
+  }
+
+  .tip strong { color: #1e3a5f; }
+
+  .warn {
+    background: #fffbeb;
+    border-left: 4px solid var(--warning);
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin: 14px 0;
+    font-size: 14px;
+    color: #92400e;
+  }
+
+  /* ---- 内联标签 ---- */
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin: 0 2px;
+  }
+  .tag.html { background: #fce4ec; color: #c62828; }
+  .tag.css  { background: #e3f2fd; color: #1565c0; }
+  .tag.js   { background: #fff3e0; color: #e65100; }
+
+  /* ---- 演示区 ---- */
+  .demo-wrapper {
+    background: #1a1a2e;
+    border-radius: 14px;
+    padding: 32px;
+    margin: 24px 0;
+    display: flex;
+    justify-content: center;
+  }
+
+  /* ---- 目录 ---- */
+  .toc {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px 28px;
+    margin-bottom: 32px;
+  }
+
+  .toc h2 { font-size: 18px; margin-bottom: 12px; }
+
+  .toc ol {
+    padding-left: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .toc li { font-size: 15px; }
+
+  .toc a {
+    color: var(--primary);
+    text-decoration: none;
+  }
+
+  .toc a:hover { text-decoration: underline; }
+
+  /* ---- 响应式 ---- */
+  @media (max-width: 640px) {
+    .page { padding: 16px 12px 60px; }
+    .hero h1 { font-size: 26px; }
+    .chapter { padding: 20px 16px; }
+    pre { font-size: 12px; padding: 12px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- 顶部导航 -->
+<nav class="top-nav">
+  <span class="logo">LMM Learner</span>
+  <span class="badge">教学</span>
+  <a href="#demo">跳转到演示</a>
+</nav>
+
+<div class="page">
+
+  <!-- 标题 -->
+  <header class="hero">
+    <h1>从零理解待办清单应用</h1>
+    <p>HTML + CSS + JavaScript 完整教学 · 零基础友好</p>
+    <p style="margin-top:8px;font-size:13px;color:var(--muted);">
+      读完本文你将理解：CSS变量、Flexbox布局、DOM操作、事件委托、localStorage持久化
+    </p>
+  </header>
+
+  <!-- 目录 -->
+  <nav class="toc">
+    <h2>目录</h2>
+    <ol>
+      <li><a href="#ch1">CSS 变量 — 一次定义，到处使用</a></li>
+      <li><a href="#ch2">Flexbox 弹性布局 — 自动排列的秘密</a></li>
+      <li><a href="#ch3">HTML 语义化结构 — 让代码会说话</a></li>
+      <li><a href="#ch4">CSS 伪类和过渡 — 让界面"活"起来</a></li>
+      <li><a href="#ch5">响应式设计 — 手机电脑都能用</a></li>
+      <li><a href="#ch6">DOM 操作 — JavaScript 操控页面元素</a></li>
+      <li><a href="#ch7">事件与事件委托 — 用户交互的核心</a></li>
+      <li><a href="#ch8">数组方法 — filter / find / forEach</a></li>
+      <li><a href="#ch9">localStorage — 让数据不丢失</a></li>
+      <li><a href="#ch10">完整流程 — 从输入到持久化的全过程</a></li>
+    </ol>
+  </nav>
+
+  <!-- ===== 第1章：CSS变量 ===== -->
+  <section class="chapter" id="ch1">
+    <h2><span class="step-num">1</span>CSS 变量 — 一次定义，到处使用</h2>
+    <h3>核心概念: <code>:root</code> 和 <code>var()</code></h3>
+
+    <p>
+      传统写法里，每个颜色要在几十个地方重复写。如果设计师说"把主色改一下"，
+      你得逐个修改，非常容易遗漏。<strong>CSS 变量</strong>就是为了解决这个问题。
+    </p>
+
+    <div class="tip">
+      <strong>类比：</strong>就像你家里所有的灯都接到一个总开关上——拧一下总开关，所有灯都变了。
+      定义一次变量，所有用到 <code>var(--变量名)</code> 的地方自动更新。
+    </div>
+
+    <pre>
+<span class="cm">/* :root 是 CSS 的"根"，写在 :root 里的变量全局可用 */</span>
+<span class="sel">:root</span> {
+  <span class="prop">--bg-primary</span>:    <span class="vl">#1a1a2e</span>;     <span class="cm">/* 主背景色 */</span>
+  <span class="prop">--accent</span>:        <span class="vl">#e94560</span>;     <span class="cm">/* 强调色（按钮/标题） */</span>
+  <span class="prop">--radius</span>:        <span class="vl">8px</span>;         <span class="cm">/* 统一圆角大小 */</span>
+  <span class="prop">--transition</span>:     <span class="vl">0.2s ease</span>;   <span class="cm">/* 统一过渡动画速度 */</span>
+}
+
+<span class="cm">/* 使用时用 var(--变量名) 引用 */</span>
+<span class="sel">.btn</span> {
+  <span class="prop">background</span>: <span class="fn">var(</span><span class="vl">--accent</span><span class="fn">)</span>;    <span class="cm">/* 自动取 #e94560 */</span>
+  <span class="prop">border-radius</span>: <span class="fn">var(</span><span class="vl">--radius</span><span class="fn">)</span>; <span class="cm">/* 自动取 8px */</span>
+}</pre>
+
+    <div class="warn">
+      <strong>命名规范：</strong>变量名用两个短横线开头 <code>--xxx</code>，
+      单词之间用短横线连接。这叫 <strong>kebab-case</strong>（烤肉串命名法）。
+    </div>
+  </section>
+
+  <!-- ===== 第2章：Flexbox ===== -->
+  <section class="chapter" id="ch2">
+    <h2><span class="step-num">2</span>Flexbox 弹性布局 — 自动排列的秘密</h2>
+    <h3>核心概念: <code>display: flex</code> 和 <code>gap</code></h3>
+
+    <p>
+      在 Flexbox 出现之前，要让几个元素横排，只能用 <code>float</code> 或者 <code>inline-block</code>，
+      经常出现各种对齐问题。Flexbox 提供了一个"弹性容器"，里面的元素会自动排列。
+    </p>
+
+    <div class="tip">
+      <strong>类比：</strong>Flex 容器像一个智能书架，你放几本书进去它会自动给你排列整齐、
+      均匀分布空间。你只需要说"横着排"还是"竖着排"。
+    </div>
+
+    <pre>
+<span class="cm">/* Flexbox 布局的三个关键属性 */</span>
+<span class="sel">.container</span> {
+  <span class="prop">display</span>: <span class="vl">flex</span>;              <span class="cm">/* 1. 开启弹性布局 */</span>
+  <span class="prop">flex-direction</span>: <span class="vl">row</span>;        <span class="cm">/* 2. 主轴方向: row(横) / column(竖) */</span>
+  <span class="prop">gap</span>: <span class="vl">10px</span>;                <span class="cm">/* 3. 子元素之间的间距 */</span>
+}
+
+<span class="cm">/* flex: 1 让元素自动撑满剩余空间 */</span>
+<span class="sel">.input-box</span> {
+  <span class="prop">flex</span>: <span class="vl">1</span>;   <span class="cm">/* 可以理解为"占满剩余所有宽度" */</span>
+}</pre>
+
+    <p>
+      在我们的待办清单中，整个页面是一个大的竖排 Flex 容器，
+      输入框区域是横排 Flex，筛选标签栏也是横排 Flex。
+    </p>
+  </section>
+
+  <!-- ===== 第3章：HTML语义化 ===== -->
+  <section class="chapter" id="ch3">
+    <h2><span class="step-num">3</span>HTML 语义化结构 — 让代码会说话</h2>
+    <h3>核心概念: 用正确的标签描述内容</h3>
+
+    <p>
+      很多人用 <code>&lt;div&gt;</code> 包一切，这会让代码难以阅读。
+      <strong>语义化标签</strong> 告诉浏览器和读代码的人：这段内容是什么。
+    </p>
+
+    <div class="tip">
+      <strong>好处：</strong>① 代码更易读 ② 搜索引擎更友好 ③ 屏幕阅读器（盲人用）能理解结构
+    </div>
+
+    <pre>
+<span class="cm">&lt;!-- 语义化的页面骨架 --&gt;</span>
+&lt;<span class="tag html">header</span>&gt;    &lt;h1&gt;待办清单&lt;/h1&gt;  &lt;/<span class="tag html">header</span>&gt;    <span class="cm">&lt;!-- 页头 --&gt;</span>
+&lt;<span class="tag html">form</span>&gt;      输入框 + 按钮          &lt;/<span class="tag html">form</span>&gt;     <span class="cm">&lt;!-- 表单（天然支持 Enter 提交） --&gt;</span>
+&lt;<span class="tag html">nav</span>&gt;       筛选标签              &lt;/<span class="tag html">nav</span>&gt;      <span class="cm">&lt;!-- 导航 --&gt;</span>
+&lt;<span class="tag html">ul</span>&gt;        任务列表              &lt;/<span class="tag html">ul</span>&gt;       <span class="cm">&lt;!-- 列表 --&gt;</span>
+&lt;<span class="tag html">footer</span>&gt;    计数 + 清除按钮         &lt;/<span class="tag html">footer</span>&gt;   <span class="cm">&lt;!-- 页脚 --&gt;</span></pre>
+
+    <div class="warn">
+      <strong>关键细节：</strong>我们用 <code>&lt;form&gt;</code> 包住输入框和按钮，
+      而不是 <code>&lt;div&gt;</code>，因为 <code>&lt;form&gt;</code> 天然响应 Enter 键提交，
+      不需要额外写键盘监听代码。
+    </div>
+  </section>
+
+  <!-- ===== 第4章：CSS伪类和过渡 ===== -->
+  <section class="chapter" id="ch4">
+    <h2><span class="step-num">4</span>CSS 伪类和过渡 — 让界面"活"起来</h2>
+    <h3>核心概念: <code>:hover</code> <code>:focus</code> 和 <code>transition</code></h3>
+
+    <p>
+      纯静态界面让人感觉"死板"。伪类可以在特定状态下触发样式变化，
+      过渡让变化平滑，不会突然跳变。
+    </p>
+
+    <pre>
+<span class="cm">/* :hover — 鼠标悬停时 */</span>
+<span class="sel">button:hover</span> {
+  <span class="prop">background</span>: <span class="vl">#ff6b81</span>;  <span class="cm">/* 颜色变亮 */</span>
+}
+
+<span class="cm">/* :focus — 输入框获得焦点时 */</span>
+<span class="sel">input:focus</span> {
+  <span class="prop">border-color</span>: <span class="vl">#e94560</span>;  <span class="cm">/* 边框变红 */</span>
+}
+
+<span class="cm">/* transition — 让变化平滑过渡 */</span>
+<span class="sel">button</span> {
+  <span class="prop">transition</span>: <span class="vl">background 0.2s ease</span>;
+  <span class="cm">/* 解读: 当 background 改变时，用 0.2 秒平滑过渡 */</span>
+}</pre>
+
+    <div class="tip">
+      <strong>为什么 0.2 秒？</strong> 人类感知"即时反馈"的阈值大约是 0.1-0.2 秒。
+      太短感觉不到过渡效果，太长会觉得拖沓。
+    </div>
+  </section>
+
+  <!-- ===== 第5章：响应式 ===== -->
+  <section class="chapter" id="ch5">
+    <h2><span class="step-num">5</span>响应式设计 — 手机电脑都能用</h2>
+    <h3>核心概念: <code>@media</code> 媒体查询</h3>
+
+    <p>
+      <code>@media</code> 让你可以根据屏幕宽度应用不同的样式。
+      这叫"断点"——在某个宽度以下，切换到移动端布局。
+    </p>
+
+    <pre>
+<span class="cm">/* 屏幕宽度小于 480px 时生效（即手机屏幕） */</span>
+<span class="sel">@media (max-width: 480px)</span> {
+  <span class="sel">body</span>      { <span class="prop">padding</span>: <span class="vl">16px 8px</span>; }    <span class="cm">/* 减小边距 */</span>
+  <span class="sel">h1</span>        { <span class="prop">font-size</span>: <span class="vl">24px</span>; }      <span class="cm">/* 缩小标题 */</span>
+  <span class="sel">.row</span>      { <span class="prop">flex-direction</span>: <span class="vl">column</span>; } <span class="cm">/* 改为竖排 */</span>
+  <span class="sel">button</span>    { <span class="prop">width</span>: <span class="vl">100%</span>; }          <span class="cm">/* 按钮撑满 */</span>
+}</pre>
+
+    <div class="tip">
+      <strong>移动端优先原则：</strong>先写好手机版的布局，再用 <code>@media (min-width: xxx)</code>
+      逐步增强大屏体验。本项目用 <code>max-width: 480px</code> 作为手机断点。
+    </div>
+  </section>
+
+  <!-- ===== 第6章：DOM操作 ===== -->
+  <section class="chapter" id="ch6">
+    <h2><span class="step-num">6</span>DOM 操作 — JavaScript 操控页面元素</h2>
+    <h3>核心概念: <code>document.getElementById</code> 和 <code>innerHTML</code></h3>
+
+    <p>
+      DOM（Document Object Model）是浏览器把 HTML 转换成的"对象树"。
+      通过 JavaScript，你可以找到任意元素、读取/修改它的内容、甚至创建新元素。
+    </p>
+
+    <pre>
+<span class="cm">// 1. 找到元素 — 通过 ID 获取</span>
+<span class="kw">var</span> <span class="fn">input</span> = document.<span class="fn">getElementById</span>(<span class="str">"todo-input"</span>);
+
+<span class="cm">// 2. 读取值</span>
+<span class="kw">var</span> text = input.<span class="prop">value</span>;   <span class="cm">// 获取用户输入的文字</span>
+
+<span class="cm">// 3. 修改值</span>
+input.<span class="prop">value</span> = <span class="str">""</span>;           <span class="cm">// 清空输入框</span>
+
+<span class="cm">// 4. 创建新元素并插入页面</span>
+<span class="kw">var</span> li = document.<span class="fn">createElement</span>(<span class="str">"li"</span>);
+li.<span class="prop">innerHTML</span> = <span class="str">'&lt;span&gt;新任务&lt;/span&gt;'</span>;  <span class="cm">// 设置内部 HTML</span>
+list.<span class="fn">appendChild</span>(li);                <span class="cm">// 追加到列表末尾</span></pre>
+
+    <div class="warn">
+      <strong>innerHTML vs textContent：</strong>
+      <code>innerHTML</code> 会把内容当 HTML 解析（有 XSS 风险），
+      <code>textContent</code> 只当纯文本处理（安全但无法插入标签）。
+      本项目用自定义的 <code>escapeHTML()</code> 函数先转义再拼接，确保安全。
+    </div>
+  </section>
+
+  <!-- ===== 第7章：事件委托 ===== -->
+  <section class="chapter" id="ch7">
+    <h2><span class="step-num">7</span>事件与事件委托 — 用户交互的核心</h2>
+    <h3>核心概念: <code>addEventListener</code> 和事件冒泡</h3>
+
+    <p>
+      <strong>事件</strong> 是用户操作（点击、按键、鼠标移动等）触发的信号。
+      <strong>事件委托</strong> 是一种优化技巧：不在每个子元素上绑定事件，
+      而是在父元素上绑定一个事件，利用"冒泡"机制统一处理。
+    </p>
+
+    <pre>
+<span class="cm">// 事件委托：只在列表上绑定一个 click，处理所有子元素</span>
+list.<span class="fn">addEventListener</span>(<span class="str">"click"</span>, <span class="kw">function</span>(<span class="fn">e</span>) {
+  <span class="kw">var</span> target = e.<span class="prop">target</span>;         <span class="cm">// e.target 是实际被点击的元素</span>
+
+  <span class="cm">// closest() 向上查找最近的 .todo-item 祖先</span>
+  <span class="kw">var</span> li = target.<span class="fn">closest</span>(<span class="str">".todo-item"</span>);
+
+  <span class="cm">// 判断被点击的是什么</span>
+  <span class="kw">if</span> (target.<span class="fn">classList</span>.<span class="fn">contains</span>(<span class="str">"todo-delete"</span>)) {
+    <span class="fn">deleteTask</span>(id);   <span class="cm">// 点了删除按钮</span>
+  }
+  <span class="kw">if</span> (target.<span class="fn">classList</span>.<span class="fn">contains</span>(<span class="str">"todo-checkbox"</span>)) {
+    <span class="fn">toggleTask</span>(id);   <span class="cm">// 点了复选框</span>
+  }
+});</pre>
+
+    <div class="tip">
+      <strong>为什么用事件委托？</strong> 如果每添加一个任务就绑定一个新的事件，
+      1000 个任务就有 1000 个监听器，内存和性能都会变差。委托只需要 1 个监听器。
+      <br><br>
+      <strong>冒泡机制：</strong> 点击一个子元素，事件会像气泡一样一层层向上传递到父元素，
+      直到 document。这就是"事件冒泡"。
+    </div>
+  </section>
+
+  <!-- ===== 第8章：数组方法 ===== -->
+  <section class="chapter" id="ch8">
+    <h2><span class="step-num">8</span>数组方法 — filter / find / forEach</h2>
+    <h3>核心概念: 遍历数组的三种常用方法</h3>
+
+    <p>
+      JavaScript 提供了多个数组方法来代替传统的 <code>for</code> 循环，
+      代码更简洁、意图更清晰。
+    </p>
+
+    <pre>
+<span class="kw">var</span> tasks = [
+  { <span class="prop">id</span>: <span class="str">"a1"</span>, <span class="prop">text</span>: <span class="str">"买牛奶"</span>, <span class="prop">completed</span>: <span class="kw">false</span> },
+  { <span class="prop">id</span>: <span class="str">"b2"</span>, <span class="prop">text</span>: <span class="str">"写作业"</span>, <span class="prop">completed</span>: <span class="kw">true</span>  },
+  { <span class="prop">id</span>: <span class="str">"c3"</span>, <span class="prop">text</span>: <span class="str">"跑步"</span>,   <span class="prop">completed</span>: <span class="kw">false</span> },
+];
+
+<span class="cm">// filter — 筛选出符合条件的，返回新数组（不修改原数组）</span>
+<span class="kw">var</span> active = tasks.<span class="fn">filter</span>(<span class="kw">function</span>(<span class="fn">t</span>) { <span class="kw">return</span> !t.completed; });
+<span class="cm">// 结果: [买牛奶, 跑步]</span>
+
+<span class="cm">// find — 找到第一个符合条件的，返回该元素</span>
+<span class="kw">var</span> task = tasks.<span class="fn">find</span>(<span class="kw">function</span>(<span class="fn">t</span>) { <span class="kw">return</span> t.id === <span class="str">"b2"</span>; });
+<span class="cm">// 结果: { id: "b2", text: "写作业", completed: true }</span>
+
+<span class="cm">// forEach — 对每个元素执行操作，不返回新数组</span>
+tasks.<span class="fn">forEach</span>(<span class="kw">function</span>(<span class="fn">t</span>) { console.<span class="fn">log</span>(t.text); });
+<span class="cm">// 依次输出: "买牛奶" "写作业" "跑步"</span></pre>
+
+    <div class="warn">
+      <strong>注意区分：</strong>
+      <code>filter</code> 返回<strong>新数组</strong>（不修改原数组），
+      <code>find</code> 返回<strong>第一个匹配的元素</strong>，
+      <code>forEach</code> <strong>不返回</strong>任何值，只执行操作。
+    </div>
+  </section>
+
+  <!-- ===== 第9章：localStorage ===== -->
+  <section class="chapter" id="ch9">
+    <h2><span class="step-num">9</span>localStorage — 让数据不丢失</h2>
+    <h3>核心概念: 浏览器的"永久存储"</h3>
+
+    <p>
+      默认情况下，刷新页面后所有 JavaScript 变量都会重置。
+      <code>localStorage</code> 是浏览器提供的存储空间，
+      数据会一直保留，除非用户手动清除。
+    </p>
+
+    <pre>
+<span class="kw">var</span> STORAGE_KEY = <span class="str">"lmm-todo-tasks"</span>;
+
+<span class="cm">// 保存（只能存字符串，所以用 JSON.stringify 转换）</span>
+<span class="kw">function</span> <span class="fn">saveTasks</span>() {
+  localStorage.<span class="fn">setItem</span>(STORAGE_KEY, JSON.<span class="fn">stringify</span>(tasks));
+  <span class="cm">// JSON.stringify:  数组/对象 → 字符串</span>
+}
+
+<span class="cm">// 加载（读出来是字符串，用 JSON.parse 转回对象）</span>
+<span class="kw">function</span> <span class="fn">loadTasks</span>() {
+  <span class="kw">var</span> raw = localStorage.<span class="fn">getItem</span>(STORAGE_KEY);
+  <span class="kw">if</span> (raw) {
+    tasks = JSON.<span class="fn">parse</span>(raw);
+    <span class="cm">// JSON.parse:  字符串 → 数组/对象</span>
+  }
+}
+
+<span class="cm">// 删除</span>
+<span class="fn">localStorage</span>.<span class="fn">removeItem</span>(STORAGE_KEY);
+
+<span class="cm">// 全部清空（慎用）</span>
+<span class="fn">localStorage</span>.<span class="fn">clear</span>();</pre>
+
+    <div class="tip">
+      <strong>JSON.stringify / JSON.parse 是什么？</strong>
+      它们是 JavaScript 内置的"翻译器"。stringify 把 JS 对象翻译成字符串（存），
+      parse 把字符串翻译回 JS 对象（读）。这是数据持久化最基础的模式。
+    </div>
+
+    <div class="warn">
+      <strong>容量限制：</strong>localStorage 每个域名约 5-10MB，
+      不适合存大量数据。大规模应用用 IndexedDB 或后端数据库。
+    </div>
+  </section>
+
+  <!-- ===== 第10章：完整流程 ===== -->
+  <section class="chapter" id="ch10">
+    <h2><span class="step-num">10</span>完整数据流 — 从输入到持久化的全过程</h2>
+    <h3>核心概念: 理解"状态驱动渲染"模式</h3>
+
+    <p>
+      整个应用围绕一个核心模式运行：<strong>修改数据 → 保存 → 重新渲染</strong>。
+      这叫做"状态驱动渲染"——界面永远是数据的映射。
+    </p>
+
+    <pre>
+<span class="cm">/* ==========================================
+   核心循环（每个操作都走这个流程）
+   ========================================== */</span>
+
+<span class="cm">// 添加任务时的完整流程:</span>
+<span class="kw">function</span> <span class="fn">addTask</span>(<span class="fn">text</span>) {
+  <span class="cm">// 步骤1: 修改数据（往数组里 push 新对象）</span>
+  tasks.<span class="fn">push</span>({ id: ..., text: text, completed: <span class="kw">false</span> });
+
+  <span class="cm">// 步骤2: 持久化（存到 localStorage）</span>
+  <span class="fn">saveTasks</span>();
+
+  <span class="cm">// 步骤3: 重新渲染（根据新数据重画界面）</span>
+  <span class="fn">render</span>();
+}
+
+<span class="cm">// render() 函数做的事:</span>
+<span class="kw">function</span> <span class="fn">render</span>() {
+  <span class="cm">// 1. 根据 currentFilter 筛选数据</span>
+  <span class="kw">var</span> filtered = <span class="fn">applyFilter</span>(tasks, currentFilter);
+
+  <span class="cm">// 2. 清空 HTML（list.innerHTML = ""）</span>
+
+  <span class="cm">// 3. 逐条创建 li 元素插入（forEach + createElement）</span>
+
+  <span class="cm">// 4. 更新计数</span>
+  <span class="fn">updateCount</span>();
+}</pre>
+
+    <div class="tip">
+      <strong>三个核心原则：</strong><br>
+      ① 数据是唯一的真相来源 — 界面永远从数据推导出来<br>
+      ② 任何修改都先改数据，再刷界面 — 保持一致性<br>
+      ③ 保存跟在修改之后 — 防止刷新丢失数据
+    </div>
+  </section>
+
+  <!-- ===== 总结 ===== -->
+  <section class="chapter" style="border-left: 4px solid var(--accent);">
+    <h2 style="color:var(--accent);">学完了，然后呢？</h2>
+
+    <p>这个待办清单虽然简单，但它涵盖了一个完整前端应用的<strong>所有核心概念</strong>：</p>
+
+    <table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:14px;">
+      <tr style="background:#f1f5f9;">
+        <th style="padding:10px 14px;text-align:left;border:1px solid var(--border);">层次</th>
+        <th style="padding:10px 14px;text-align:left;border:1px solid var(--border);">知识点</th>
+        <th style="padding:10px 14px;text-align:left;border:1px solid var(--border);">下一步可以学</th>
+      </tr>
+      <tr>
+        <td style="padding:8px 14px;border:1px solid var(--border);">CSS</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">变量、Flexbox、过渡、响应式</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">Grid 布局、动画、CSS Modules</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 14px;border:1px solid var(--border);">HTML</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">语义化标签、表单、无障碍属性</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">Web Components、模板引擎</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 14px;border:1px solid var(--border);">JavaScript</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">DOM、事件委托、数组方法</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">Promise、fetch API、ES6+语法</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 14px;border:1px solid var(--border);">存储</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">localStorage、JSON序列化</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">IndexedDB、后端API对接</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 14px;border:1px solid var(--border);">架构</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">状态驱动渲染、数据持久化模式</td>
+        <td style="padding:8px 14px;border:1px solid var(--border);">React/Vue 框架、状态管理</td>
+      </tr>
+    </table>
+
+    <div class="tip" style="margin-top:16px;">
+      <strong>建议：</strong>试着修改这个待办清单——加新功能、改颜色、换布局。
+      动手改代码是最好的学习方式。如果遇到问题，回来看这份文档对照理解。
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

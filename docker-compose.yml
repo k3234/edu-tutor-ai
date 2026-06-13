@@ -1,0 +1,57 @@
+# LMM Training docker-compose.yml (CPU Version)
+version: '3.8'
+
+services:
+  lmm-training:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lmm-training:latest
+    container_name: lmm-training
+    environment:
+      - PYTHONPATH=/workspace
+    volumes:
+      - ./data:/workspace/data
+      - ./models:/workspace/models
+      - ./logs:/workspace/logs
+      - ./scripts:/workspace/scripts
+      - ./configs:/workspace/configs
+      - ./experiments:/workspace/experiments
+      - ./trainer:/workspace/trainer
+      - ./src:/workspace/src
+    stdin_open: true
+    tty: true
+    command: /bin/bash
+
+  lmm-training-run:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lmm-training:latest
+    container_name: lmm-training-run
+    environment:
+      - PYTHONPATH=/workspace
+    volumes:
+      - ./data:/workspace/data
+      - ./models:/workspace/models
+      - ./logs:/workspace/logs
+      - ./scripts:/workspace/scripts
+      - ./configs:/workspace/configs
+      - ./experiments:/workspace/experiments
+      - ./trainer:/workspace/trainer
+      - ./src:/workspace/src
+    command: python scripts/prepare_tokens.py && python scripts/train.py --config configs/lmm_tiny_test.yaml
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lmm-training:latest
+    container_name: lmm-jupyter
+    environment:
+      - PYTHONPATH=/workspace
+    volumes:
+      - ./:/workspace
+    ports:
+      - "8889:8888"
+    command: jupyter lab --ip=0.0.0.0 --port=8888 --allow-root --no-browser

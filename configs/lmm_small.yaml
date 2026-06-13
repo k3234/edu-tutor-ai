@@ -1,0 +1,50 @@
+# LMM-Small 训练配置
+# ~120M 参数，适合 8GB VRAM 消费级 GPU
+
+model:
+  vocab_size: 32000
+  n_layer: 12
+  n_head: 12
+  n_embd: 768
+  ffn_dim: 3072
+  max_seq_len: 1024
+  dropout: 0.1
+  bias: true
+  tie_weights: true
+
+training:
+  # 批次配置
+  batch_size: 32
+  gradient_accumulation_steps: 4  # 等效 batch_size = 128
+
+  # 优化器
+  learning_rate: 3.0e-4
+  weight_decay: 0.1
+  min_lr_ratio: 0.1
+
+  # 训练步数
+  max_steps: 50000
+  warmup_steps: 1000
+
+  # 验证与保存
+  val_interval: 500        # 每 500 步验证一次
+  checkpoint_interval: 2000  # 每 2000 步保存 checkpoint
+
+  # 混合精度
+  use_amp: true
+
+  # 随机种子（保证可复现）
+  seed: 42
+
+  # 实验目录
+  exp_dir: "experiments/exp20260609_lmm_small_v1"
+
+data:
+  # Token 文件路径（分词后的数据）
+  token_file: "data/tokens.pt"
+
+  # 训练/验证分割比例
+  train_ratio: 0.95
+
+  # 数据加载进程数（0=主进程）
+  num_workers: 0

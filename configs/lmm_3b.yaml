@@ -1,0 +1,47 @@
+# LMM-Small 配置（~120M，适合 8GB VRAM 消费级 GPU）
+
+model:
+  vocab_size: 50000
+  n_layer: 12
+  n_head: 12
+  n_embd: 768
+  ffn_dim: 3072
+  max_seq_len: 1024
+  dropout: 0.1
+
+training:
+  batch_size: 8
+  gradient_accumulation_steps: 4
+  learning_rate: 3.0e-4
+  weight_decay: 0.1
+  max_steps: 20000
+  warmup_steps: 1000
+  val_interval: 500
+  checkpoint_interval: 2000
+  use_amp: true
+  seed: 42
+  exp_dir: "experiments/exp_small_v1"
+
+data:
+  token_file: "data/raw/edu_corpus.txt"
+  train_ratio: 0.95
+
+# 教师模型配置（用于 SFT/DPO 数据生成）
+teacher:
+  ollama_model: "qwen2.5:7b-instruct"
+  dpo_judge: "qwen2.5:7b-instruct"
+  temperature: 0.8
+  max_tokens: 1500
+
+sft:
+  data_file: "data/sft/train.jsonl"
+  steps: 5000
+  batch_size: 4
+  lr: 5e-4
+
+dpo:
+  data_file: "data/dpo/raw.jsonl"
+  steps: 500
+  batch_size: 4
+  lr: 5e-5
+  beta: 0.1
