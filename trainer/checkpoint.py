@@ -22,6 +22,7 @@ def save_checkpoint(
     loss: float,
     save_dir: str,
     is_best: bool = False,
+    filename: str = None,
 ):
     """
     保存训练 checkpoint
@@ -34,6 +35,7 @@ def save_checkpoint(
         loss: 当前损失值
         save_dir: 保存目录
         is_best: 是否为最佳模型（额外保存一份 best.pt）
+        filename: 指定保存文件名（含后缀），如 "final.pt"。为空时用 step_{step}.pt
     """
     os.makedirs(save_dir, exist_ok=True)
 
@@ -45,8 +47,11 @@ def save_checkpoint(
         "scheduler_state_dict": scheduler.state_dict() if scheduler else None,
     }
 
-    # 保存为 step_{step}.pt
-    checkpoint_path = os.path.join(save_dir, f"step_{step}.pt")
+    # 保存为 step_{step}.pt（或指定文件名）
+    if filename:
+        checkpoint_path = os.path.join(save_dir, filename)
+    else:
+        checkpoint_path = os.path.join(save_dir, f"step_{step}.pt")
     torch.save(checkpoint, checkpoint_path)
 
     # 同时保存最新 checkpoint（覆盖）

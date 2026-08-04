@@ -327,8 +327,8 @@ def train(args):
 
             if step % max(100, args.steps // 10) == 0:
                 # 保存中间最佳模型
-                if avg_loss < best_loss:
-                    best_loss = avg_loss
+                if loss.item() < best_loss:
+                    best_loss = loss.item()
                     save_path = os.path.join(ckpt_dir, "best.pt")
                     torch.save({
                         "model_state_dict": student.state_dict(),

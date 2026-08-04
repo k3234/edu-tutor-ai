@@ -191,6 +191,7 @@ def train(args):
         config.n_layer = args.n_layer
     if args.n_embd:
         config.n_embd = args.n_embd
+        config.n_head = max(1, args.n_embd // 64)  # 保持 head_dim=64
         config.ffn_dim = 4 * args.n_embd
 
     model = LMMModel(config)
@@ -217,8 +218,10 @@ def train(args):
             model,
             rank=args.lora_rank,
             alpha=args.lora_alpha,
-            target_modules=["c_attn", "c_proj", "fc_1", "fc_2"],
+            target_modules=["c_attn", "c_proj", "gate_proj", "up_proj", "down_proj"],
         )
+        # 冻结所有非 LoRA 参数（LoraLinear 之外的 MLP / lm_head / wte 等）
+        lora_model.freeze_base()
         trainable_params = list(lora_model.lora_parameters())
         if not trainable_params:
             print("[ERROR] LoRA 没有找到可训练参数 — 可能是 module 名不匹配。"

@@ -33,8 +33,10 @@ from trainer import save_checkpoint, load_checkpoint, get_latest_checkpoint
 from trainer import TrainingLogger
 
 
-def get_device() -> str:
+def get_device(device: str = None) -> str:
     """获取可用的计算设备"""
+    if device:
+        return device
     if torch.cuda.is_available():
         return "cuda"
     elif torch.backends.mps.is_available():
@@ -76,13 +78,16 @@ def validate(model, val_loader, device, max_batches: int = 10):
     return total_loss / max(n_batches, 1)
 
 
-def train(config_path: str, resume_path: str = None):
+def train(config_path: str, resume_path: str = None,
+          steps: int = None, device_name: str = None):
     """
     主训练函数
 
     Args:
         config_path: 配置文件路径
         resume_path: 恢复训练的 checkpoint 路径（可选）
+        steps: 覆盖配置中的最大训练步数（可选）
+        device_name: 覆盖自动检测的计算设备（可选）
     """
     # ========== 1. 加载配置 ==========
     import yaml
@@ -94,6 +99,10 @@ def train(config_path: str, resume_path: str = None):
     train_cfg = cfg["training"]
     data_cfg = cfg["data"]
 
+    # --steps 覆盖配置里的 max_steps
+    if steps:
+        train_cfg["max_steps"] = steps
+
     # 创建实验目录
     exp_dir = train_cfg.get("exp_dir", "experiments/exp_default")
     checkpoint_dir = os.path.join(exp_dir, "checkpoints")
@@ -102,7 +111,7 @@ def train(config_path: str, resume_path: str = None):
     os.makedirs(log_dir, exist_ok=True)
 
     # ========== 2. 初始化设备 ==========
-    device = get_device()
+    device = get_device(device_name)
     print(f"使用设备: {device}")
 
     # 设置随机种子（保证可复现）
@@ -281,7 +290,8 @@ def train(config_path: str, resume_path: str = None):
 
     # 保存最终模型
     final_path = os.path.join(checkpoint_dir, "final.pt")
-    save_checkpoint(model, optimizer, scheduler, max_steps, best_val_loss, checkpoint_dir)
+    save_checkpoint(model, optimizer, scheduler, max_steps, best_val_loss,
+                    checkpoint_dir, filename="final.pt")
     print(f"\n训练完成! 最终模型保存于: {final_path}")
 
 
@@ -289,15 +299,16 @@ def main():
     parser = argparse.ArgumentParser(description="LMM 模型训练")
     parser.add_argument("--config", type=str, default="configs/lmm_small.yaml", help="配置文件路径")
     parser.add_argument("--resume", type=str, default=None, help="恢复训练的 checkpoint 路径")
-    parser.add_argument("--device", type=str, default=None, help="计算设备 (cuda/cpu)")
-
+    parser.add_argument("--device", type=str, default=None, help="计算设备 (cuda/cpu/mps)")
+    parser.add_argument("--steps", type=int, default=None,
+                        help="最大训练步数（覆盖配置文件中的 max_steps）")
     args = parser.parse_args()
 
     if not os.path.exists(args.config):
         print(f"错误: 配置文件不存在: {args.config}")
         return
 
-    train(args.config, args.resume)
+    train(args.config, args.resume, steps=args.steps, device_name=args.device)
 
 
 if __name__ == "__main__":

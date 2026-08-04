@@ -87,7 +87,7 @@ python scripts/train_dpo.py --data data/dpo/raw.jsonl \
 ```bash
 python scripts/eval_edu_benchmark.py \
     --checkpoint experiments/exp_dpo_01/checkpoints/best.pt \
-    --val-data data/sft/train_val.jsonl \
+    --val-data data/sft/val.jsonl \
     --compare-teacher qwen2.5:7b-instruct
 ```
 

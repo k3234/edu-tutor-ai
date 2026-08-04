@@ -41,13 +41,34 @@ def convert_checkpoint_to_hf(checkpoint_path: str, output_dir: str, tokenizer_di
     checkpoint = torch.load(checkpoint_path, map_location="cpu")
 
     # 1. 恢复模型配置
-    # 从 checkpoint 中推断配置（如果没有保存，使用默认配置）
-    model_cfg = LMMConfig()
+    # 优先读 checkpoint 里保存的 config；否则从权重形状推断
+    model_cfg = None
+    sd = checkpoint.get("model_state_dict", checkpoint)
+    if checkpoint.get("config"):
+        try:
+            model_cfg = LMMConfig.from_dict(checkpoint["config"])
+        except Exception:
+            model_cfg = None
+    if model_cfg is None:
+        wte_shape = sd["wte.weight"].shape
+        wpe_shape = sd["wpe.weight"].shape
+        n_layer = sum(1 for k in sd if k.endswith("attn.c_attn.weight"))
+        n_embd = wte_shape[1]
+        ffn_dim = sd["blocks.0.mlp.gate_proj.weight"].shape[0]
+        model_cfg = LMMConfig(
+            vocab_size=wte_shape[0],
+            n_layer=n_layer,
+            n_embd=n_embd,
+            n_head=max(1, n_embd // 64),
+            ffn_dim=ffn_dim,
+            max_seq_len=wpe_shape[0],
+        )
+    print(f"恢复模型配置: {model_cfg}")
 
     # 2. 初始化模型并加载权重
     print("初始化模型...")
     model = LMMModel(model_cfg)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    model.load_state_dict(sd, strict=False)
     model.eval()
 
     # 3. 创建输出目录
@@ -90,7 +111,9 @@ def convert_checkpoint_to_hf(checkpoint_path: str, output_dir: str, tokenizer_di
                 shutil.copy2(src, dst)
                 print(f"分词器文件已复制: {f}")
 
-    # 7. 创建模型卡（README）
+    # 创建模型卡（README）
+    loss_val = checkpoint.get("loss")
+    step_val = checkpoint.get("step", "unknown")
     readme_path = os.path.join(output_dir, "README.md")
     with open(readme_path, "w", encoding="utf-8") as f:
         f.write(f"""# LMM-Small
@@ -108,8 +131,8 @@ def convert_checkpoint_to_hf(checkpoint_path: str, output_dir: str, tokenizer_di
 
 ## 训练信息
 
-- 训练步数: {checkpoint.get('step', 'unknown')}
-- 最佳损失: {checkpoint.get('loss', 'unknown'):.4f}
+- 训练步数: {step_val}
+- 最佳损失: {loss_val if loss_val is not None else 'unknown'}
 - 训练框架: PyTorch (从零实现)
 
 ## 使用

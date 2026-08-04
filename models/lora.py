@@ -124,9 +124,9 @@ class LoraModel(nn.Module):
         self.alpha = alpha
 
         # 默认要注入 LoRA 的模块名关键字
-        # 适配 LMM 里的 c_attn / c_proj / fc_1 / fc_2 / lm_head / wte 等
+        # 适配 LMM 里的 c_attn / c_proj / gate_proj / up_proj / down_proj
         if target_modules is None:
-            target_modules = ["c_attn", "c_proj", "fc_1", "fc_2"]
+            target_modules = ["c_attn", "c_proj", "gate_proj", "up_proj", "down_proj"]
         self.target_modules = target_modules
 
         # 递归替换

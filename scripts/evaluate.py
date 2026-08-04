@@ -215,7 +215,8 @@ def evaluate_generation_quality(model, tokenizer, device):
     return samples
 
 
-def evaluate_speed(model, device, seq_len: int = 1024, n_iters: int = 10):
+def evaluate_speed(model, device, seq_len: int = 1024, n_iters: int = 10,
+                   vocab_size: int = 32000):
     """
     评估推理速度
 
@@ -235,7 +236,7 @@ def evaluate_speed(model, device, seq_len: int = 1024, n_iters: int = 10):
     model.eval()
 
     # 准备输入
-    dummy_input = torch.randint(0, 32000, (1, seq_len)).to(device)
+    dummy_input = torch.randint(0, vocab_size, (1, seq_len)).to(device)
 
     # 预热
     with torch.no_grad():
@@ -280,16 +281,39 @@ def evaluate(checkpoint_path: str, data_config: dict = None):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"\n使用设备: {device}")
 
-    config = LMMConfig()
-    model = LMMModel(config).to(device)
-
     checkpoint = torch.load(checkpoint_path, map_location=device)
-    model.load_state_dict(checkpoint["model_state_dict"])
+    sd = checkpoint.get("model_state_dict", checkpoint)
+
+    # 优先读 checkpoint 里的 config，否则从权重形状推断
+    config = None
+    if checkpoint.get("config"):
+        try:
+            config = LMMConfig.from_dict(checkpoint["config"])
+        except Exception:
+            config = None
+    if config is None:
+        wte_shape = sd["wte.weight"].shape
+        wpe_shape = sd["wpe.weight"].shape
+        n_layer = sum(1 for k in sd if k.endswith("attn.c_attn.weight"))
+        n_embd = wte_shape[1]
+        ffn_dim = sd["blocks.0.mlp.gate_proj.weight"].shape[0]
+        config = LMMConfig(
+            vocab_size=wte_shape[0],
+            n_layer=n_layer,
+            n_embd=n_embd,
+            n_head=max(1, n_embd // 64),
+            ffn_dim=ffn_dim,
+            max_seq_len=wpe_shape[0],
+        )
+
+    model = LMMModel(config).to(device)
+    model.load_state_dict(sd, strict=False)
     model.eval()
 
     print(f"模型已加载: {checkpoint_path}")
     print(f"训练步数: {checkpoint.get('step', 'unknown')}")
-    print(f"训练损失: {checkpoint.get('loss', 'unknown'):.4f}")
+    loss = checkpoint.get("loss")
+    print(f"训练损失: {loss if loss is not None else 'unknown'}")
 
     # 2. 困惑度评估
     if data_config and os.path.exists(data_config.get("token_file", "")):
@@ -325,7 +349,8 @@ def evaluate(checkpoint_path: str, data_config: dict = None):
         generation_samples = []
 
     # 5. 速度评估
-    speed = evaluate_speed(model, device)
+    speed = evaluate_speed(model, device, seq_len=min(1024, config.max_seq_len),
+                           vocab_size=config.vocab_size)
 
     # 6. 总结
     print("\n" + "=" * 70)

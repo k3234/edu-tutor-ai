@@ -244,6 +244,7 @@ def train(args):
         config.n_layer = args.n_layer
     if args.n_embd:
         config.n_embd = args.n_embd
+        config.n_head = max(1, args.n_embd // 64)  # 保持 head_dim=64
         config.ffn_dim = 4 * args.n_embd
 
     model = LMMModel(config).to(device)
